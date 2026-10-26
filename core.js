@@ -180,7 +180,7 @@ export function gradeWritingPage(state,language,page,answers,direction='forward'
   next.languages[language].cycles[page.scope]=[...new Set([...page.seen,...page.words.map(w=>w.id)])];
   return {state:next,results};
 }
-export function germanArticlesRequired(state){return state.preferences?.requireGermanArticles!==false;}
+export function germanArticlesRequired(state){return state.preferences?.requireGermanArticles===true;}
 export function shouldAskGermanArticle(state,word){return germanArticlesRequired(state)&&germanArticles(word).length>0;}
 export function checkRecall(input,word,direction='forward',requireArticles=true){
   const answers=recallAnswers(word,direction);
