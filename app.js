@@ -218,6 +218,9 @@ function reveal(){
   if(!current||current.language!==language)return;
   const w=book().words.find(w=>w.id===current.id);current.revealed=true;$('answerArea').hidden=false;$('revealAnswer').hidden=true;
   $('fullTerm').textContent=w.term;$('fullTerm').lang=language;$('germanAnswer').textContent=w.de;
+  $('fullTerm').hidden=mode==='recall'&&current.direction!=='reverse';
+  $('germanAnswer').hidden=mode==='recall'&&current.direction==='reverse';
+  $('exampleArea').open=mode==='context';
   const ex=current.example;if(ex){$('exampleArea').hidden=false;$('exampleText').textContent=ex.sentence.replace('{{word}}',ex.answer);$('exampleText').lang=language;$('exampleTranslation').textContent=ex.translation;$('exampleSource').textContent=(ex.source==='textbook'?'Schulbuch':'KI-Beispiel')+(ex.reference?' · '+ex.reference:'');}
   if(mode!=='context')$('judgeButtons').hidden=false;
 }
