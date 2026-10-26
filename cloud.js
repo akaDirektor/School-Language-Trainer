@@ -14,7 +14,15 @@ export function createCloud(config,adapter,env={storage:localStorage,fetch:globa
       if(session.expires_at*1000<Date.now()+60000){const token=await request('/auth/v1/token?grant_type=refresh_token',{refresh_token:session.refresh_token},false);session={...token,expires_at:Math.floor(Date.now()/1000)+token.expires_in};env.storage.setItem(SESSION,JSON.stringify({project:config.url,session}));}
     }
     const response=await env.fetch(config.url+path,{method:body?'POST':'GET',headers:{apikey:config.publishableKey,...(auth?{Authorization:'Bearer '+session.access_token}:{}),'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(15000)});
-    if(!response.ok)throw Error(response.status===400||response.status===401?'Anmeldung oder Anfrage abgelehnt. Bitte Zugangsdaten und Einrichtung prüfen.':'Cloud nicht erreichbar (HTTP '+response.status+').');
+    if(!response.ok){
+      const details=await response.json().catch(()=>({}));
+      const code=details.error_code||details.code;
+      if(code==='invalid_credentials'||details.error_description==='Invalid login credentials')throw Error('E-Mail oder Passwort ist falsch. Bitte erneut versuchen.');
+      if(code==='email_not_confirmed')throw Error('Die E-Mail ist noch nicht bestätigt. In Supabase muss Auto Confirm User aktiviert sein.');
+      if(code==='PGRST205'||code==='42P01')throw Error('Die Cloud-Tabellen fehlen noch. Bitte die Einrichtung im neuen Supabase-Projekt abschließen.');
+      if(response.status===403)throw Error('Keine Zugriffsberechtigung. Bitte die Schüler-Zuordnung und Cloud-Einrichtung prüfen.');
+      throw Error('Die Cloud-Anfrage wurde abgelehnt (HTTP '+response.status+'). Bitte Zugangsdaten und Einrichtung prüfen.');
+    }
     return response.status===204?null:response.json();
   }
   async function pull(){const rows=await request('/rest/v1/school_progress?select=user_id,revision,state&user_id=eq.'+encodeURIComponent(account.student_id));return rows[0]||null;}
@@ -43,7 +51,7 @@ export function createCloud(config,adapter,env={storage:localStorage,fetch:globa
       const row=await pull();
       if(cache?.pending){
         validateState(cache.state);adapter.apply(cache.state);ready=true;
-        if((row?.revision??-1)!==cache.revision){conflict();return;}
+        if((row?.revision??-1)!==cache.revision){conflict();return {ready:false,conflict:true};}
       }else if(row){cache={revision:row.revision,state:validateState(row.state),pending:false,role:account.role,student_id:account.student_id};persist();adapter.apply(cache.state);ready=true;}
       else if(account.role==='student'){
         // Starting a cloud profile never silently uploads a device's private local profile.
@@ -51,15 +59,17 @@ export function createCloud(config,adapter,env={storage:localStorage,fetch:globa
         if(!rows.length)throw Error('Das Profil wurde gerade auf einem anderen Gerät angelegt. Bitte erneut anmelden.');
         cache={revision:rows[0].revision,state:validateState(rows[0].state),pending:false,role:account.role,student_id:account.student_id};persist();adapter.apply(cache.state);ready=true;
       }else throw Error('Der Schüler muss sich zuerst einmal anmelden.');
-      lock();status(account.role==='parent'?'Elternansicht · nur lesen':'Cloud verbunden');await sync();
+      lock();status(account.role==='parent'?'Elternansicht · nur lesen':'Cloud verbunden');await sync();return {ready:!blocked,offline:false};
     }catch(error){
       if(cache?.state&&['student','parent'].includes(cache.role)){
-        account={role:cache.role,student_id:cache.student_id};adapter.apply(validateState(cache.state));ready=true;lock();status('Offline · gespeicherter Lernstand dieses Kontos. '+error.message);
-      }else{ready=false;lock();status(error.message);}
+        account={role:cache.role,student_id:cache.student_id};adapter.apply(validateState(cache.state));ready=true;lock();status('Offline · gespeicherter Lernstand dieses Kontos. '+error.message);return {ready:true,offline:true};
+      }else{ready=false;lock();status(error.message);throw error;}
     }
   }
   return {
     enabled,
+    get connected(){return ready&&!blocked;},
+    get identity(){return session?.user?.email||'';},
     get readonly(){return account?.role==='parent';},
     async init(){
       if(!enabled){status('Nur auf diesem Gerät · Cloud noch nicht eingerichtet');return;}
@@ -71,7 +81,8 @@ export function createCloud(config,adapter,env={storage:localStorage,fetch:globa
       if(!enabled)throw Error('Die neue Supabase-Verbindung ist noch nicht eingerichtet.');
       if(busy)throw Error('Bitte laufende Synchronisation abwarten.');
       if(cache?.pending)throw Error('Zuerst Änderungen synchronisieren oder sichern.');
-      const token=await request('/auth/v1/token?grant_type=password',{email,password},false);session={...token,expires_at:Math.floor(Date.now()/1000)+token.expires_in};env.storage.setItem(SESSION,JSON.stringify({project:config.url,session}));await connect();
+      status('Anmeldung wird geprüft …');
+      const token=await request('/auth/v1/token?grant_type=password',{email:email.trim(),password},false);session={...token,expires_at:Math.floor(Date.now()/1000)+token.expires_in};env.storage.setItem(SESSION,JSON.stringify({project:config.url,session}));return connect();
     },
     save(state){
       if(!ready||blocked||account?.role!=='student')throw Error('Dieses Konto darf den Lernstand gerade nicht ändern.');

@@ -56,6 +56,12 @@ function render(){
   renderActivity();renderLessons();renderDictionary();updateMode();
   document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
   if(cloud.enabled){$('storageNoteText').textContent=parentView?'Elternansicht · Lernstand des Schülerkontos':cloudLocked?'Für geräteübergreifendes Lernen bitte anmelden':'Cloud-Synchronisation · derselbe Lernstand auf deinen Geräten';$('localCallout').hidden=true;}
+  if(cloud.enabled){
+    const connected=cloud.connected;
+    $('accountState').textContent=connected?'✓ Angemeldet'+(cloud.identity?' als '+cloud.identity:'')+(parentView?' · Elternansicht':' · Schülerkonto'):'Bitte anmelden, um deinen Lernstand auf allen Geräten zu nutzen.';
+    $('accountAction').textContent=connected?'Konto & Synchronisation':'Anmelden →';
+    $('cloudLogin').hidden=connected;$('signedInTools').hidden=!connected;
+  }
 }
 function renderActivity(){
   const days=activity(book());$('weekTotal').textContent=days.reduce((sum,d)=>sum+d.count,0)+' Wort-Tage';
@@ -210,9 +216,9 @@ async function loadSchoolVocabulary(){
 async function init(){
   try{lastRaw=localStorage.getItem(STORAGE_KEY);if(lastRaw)state=validateState(JSON.parse(lastRaw));const size=localStorage.getItem('school-language-trainer:text-size:v1');if(['large','largest'].includes(size)){document.documentElement.classList.add(size);$('textSize').value=size;}}
   catch(error){storageOK=false;notice('Gespeicherte Daten konnten nicht gelesen werden. Das Original wurde nicht überschrieben. '+error.message,true);}
-  render();
-  await cloud.init();
   $('cloudLogin').hidden=!cloud.enabled;$('cloudNotConfigured').hidden=cloud.enabled;$('demoToggle').hidden=cloud.enabled;
+  $('accountBanner').hidden=!cloud.enabled;render();
+  await cloud.init();
   if(cloud.enabled){$('reportCloudNote').textContent='Mit dem Elternkonto kannst du den synchronisierten Lernstand ansehen.';}
   if(storageOK){
     try{
@@ -221,9 +227,21 @@ async function init(){
   }
   if('serviceWorker' in navigator){try{await navigator.serviceWorker.register('./sw.js');}catch{/* The app remains usable online when offline caching is unavailable. */}}
 }
-init();
-
-$('cloudLogin').onsubmit=async event=>{event.preventDefault();const button=$('cloudLoginButton');button.disabled=true;try{if(Object.values(state.languages).some(b=>b.words.length)&&!cloud.enabled)return;await cloud.login($('loginEmail').value,$('loginPassword').value);$('loginPassword').value='';await loadSchoolVocabulary();render();}catch(error){$('cloudStatus').textContent=error.message;}finally{button.disabled=false;}};
+$('accountAction').onclick=()=>{$('toolsDialog').showModal();if(!cloud.connected)$('loginEmail').focus();};
+$('cloudLogin').onsubmit=async event=>{
+  event.preventDefault();const button=$('cloudLoginButton');button.disabled=true;button.textContent='Anmeldung wird geprüft …';$('cloudStatus').textContent='Verbindung zur Cloud wird hergestellt …';$('loginFeedback').textContent='Verbindung zur Cloud wird hergestellt …';$('loginFeedback').classList.remove('form-error');
+  try{
+    const result=await cloud.login($('loginEmail').value,$('loginPassword').value);
+    if(!result?.ready)throw Error('Der Lernstand ist noch gesperrt. Bitte den angezeigten Cloud-Hinweis beachten.');
+    $('loginPassword').value='';render();$('toolsDialog').close();
+    notice(result.offline?'Angemeldet · gespeicherter Lernstand verfügbar. Die Cloud ist gerade nicht erreichbar.':'✓ Erfolgreich angemeldet. Du kannst jetzt Lektionen und Wörter hinzufügen.');
+    try{await loadSchoolVocabulary();}catch(error){notice('Du bist angemeldet. Neue Wörter konnten gerade nicht geladen werden: '+error.message,true);}
+  }catch(error){
+    const message=error.name==='TimeoutError'||error.name==='AbortError'?'Die Verbindung dauert zu lange. Bitte Internetverbindung prüfen und erneut versuchen.':error.message==='Failed to fetch'?'Die Cloud ist nicht erreichbar. Bitte Internetverbindung prüfen und erneut versuchen.':error.message;
+    $('cloudStatus').textContent=message;$('loginFeedback').textContent=message;$('loginFeedback').classList.add('form-error');$('loginFeedback').scrollIntoView({block:'nearest'});
+  }finally{button.disabled=false;button.textContent='Anmelden';}
+};
 $('cloudSync').onclick=()=>cloud.sync();
 $('cloudLogout').onclick=()=>{try{cloud.logout();}catch(error){$('cloudStatus').textContent=error.message;}};
 $('loadCloudVersion').onclick=async()=>{download(backup(cloud.snapshot()||state),'school-konflikt-'+Date.now()+'.json');if(!confirm('Die lokale Version wurde gesichert. Jetzt die Cloud-Version laden?'))return;try{await cloud.loadCloud();storageOK=true;render();}catch(error){$('cloudStatus').textContent=error.message;}};
+init().catch(error=>notice('Beim Start ist ein Fehler aufgetreten: '+error.message,true));
