@@ -14,7 +14,7 @@ function text(value, label, max = 500) {
 function id(value) { if(typeof value !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(value)) throw Error('Ungültige ID.'); return value; }
 function uniqueIds(items) { const seen = new Set(); for(const item of items) { if(seen.has(item.id)) throw Error('Doppelte ID: '+item.id); seen.add(item.id); } }
 export function emptyState() {
-  return {schema:1, languages:Object.fromEntries(LANGUAGES.map(lang => [lang,{lessons:[],words:[],stats:{},hidden:[],cycles:{}}]))};
+  return {schema:1, languages:Object.fromEntries(LANGUAGES.map(lang => [lang,{lessons:[],words:[],stats:{},hidden:[],cycles:{},catalogBatches:[]}]))};
 }
 export function validateWord(raw, language) {
   if(!raw || typeof raw !== 'object' || !LANGUAGES.includes(language)) throw Error('Ungültiges Wort.');
@@ -28,6 +28,7 @@ export function validateWord(raw, language) {
     const result = {sentence:text(example.sentence,'Lückensatz',2000),answer:text(example.answer,'Lösung',200),translation:example.translation ? text(example.translation,'Satzübersetzung',2000) : '',source:example.source,reference:example.reference ? text(example.reference,'Satzquelle',500) : ''};
     if(result.sentence.split('{{word}}').length !== 2) throw Error('Der Satz muss genau eine Lücke {{word}} enthalten.');
     if(!['textbook','generated'].includes(result.source)) throw Error('Satzquelle muss textbook oder generated sein.');
+    if(example.acceptedAnswers!=null){if(!Array.isArray(example.acceptedAnswers)||example.acceptedAnswers.length>8)throw Error('Ungültige alternative Lösungen.');result.acceptedAnswers=[...new Set(example.acceptedAnswers.map(value=>text(value,'Alternative Lösung',200)))];}
     return result;
   });
   return word;
@@ -49,13 +50,15 @@ function validateWords(raw, language, lessons) {
 export function validateVocabulary(raw) {
   if(!raw || raw.format !== 'school-vocabulary-v1' || !LANGUAGES.includes(raw.language)) throw Error('Erwartet wird school-vocabulary-v1 mit language en oder es.');
   const lessons = validateLessons(raw.lessons);
-  return {format:raw.format,language:raw.language,lessons,words:validateWords(raw.words,raw.language,lessons)};
+  return {format:raw.format,language:raw.language,...(raw.batchId?{batchId:id(raw.batchId)}:{}),lessons,words:validateWords(raw.words,raw.language,lessons)};
 }
 export function validateState(raw) {
   if(!raw || raw.schema !== 1 || !raw.languages || LANGUAGES.some(lang => !raw.languages[lang])) throw Error('Diese Sicherung gehört nicht zu School Language Trainer.');
   const state = emptyState();
   for(const lang of LANGUAGES) {
     const input = raw.languages[lang], target = state.languages[lang];
+    if(input.catalogBatches!=null&&(!Array.isArray(input.catalogBatches)||input.catalogBatches.length>10000))throw Error('Ungültige Importhistorie.');
+    target.catalogBatches=[...new Set(input.catalogBatches||[])].map(id);
     target.lessons = validateLessons(input.lessons);
     target.words = validateWords(input.words,lang,target.lessons);
     const ids = new Set(target.words.map(w => w.id));
@@ -132,7 +135,7 @@ export function activity(book,day=dayKey()) {
   return Array.from({length:7},(_,i)=>{const date=new Date(day+'T12:00:00');date.setDate(date.getDate()-6+i);const key=dayKey(date);const s=summarize(book,key);return {day:key,count:s.today,total:s.total};});
 }
 export function promptTerm(word,lang) { return lang === 'es' && word.type === 'noun' ? word.term.replace(/^(el|la|los|las)\s+/i,'') : word.term; }
-export function checkContext(input,example) { return normalize(input) === normalize(example.answer); }
+export function checkContext(input,example) { return [example.answer,...(example.acceptedAnswers||[])].some(answer=>normalize(input)===normalize(answer)); }
 export function mergeVocabulary(state,raw) {
   const incoming=validateVocabulary(raw), next=clone(state), book=next.languages[incoming.language];let added=0;
   for(const lesson of incoming.lessons) { const old=book.lessons.find(l=>l.id===lesson.id); if(old && old.name!==lesson.name) throw Error('Lektions-ID bereits mit anderem Namen belegt: '+lesson.id); if(!old)book.lessons.push(lesson); }
@@ -150,3 +153,16 @@ export function mergeVocabulary(state,raw) {
 }
 export function backup(state) { return {format:FORMAT,exportedAt:new Date().toISOString(),state:validateState(state)}; }
 export function parseBackup(raw) { if(raw?.format !== FORMAT)throw Error('Keine School-Trainer-Sicherung. Deutsch-Trainer-Daten werden nicht importiert.');return validateState(raw.state); }
+export function applyCatalog(state,raw){
+  const source=validateVocabulary(raw),book=state.languages[source.language];
+  if(source.batchId&&book.catalogBatches?.includes(source.batchId))return {state,added:0};
+  const result=mergeVocabulary(state,source);
+  if(source.batchId)result.state.languages[source.language].catalogBatches.push(source.batchId);
+  return result;
+}
+export function resetLanguage(state,language){
+  if(!LANGUAGES.includes(language))throw Error('Ungültige Sprache.');
+  const next=clone(state),previous=next.languages[language];
+  next.languages[language]={...emptyState().languages[language],catalogBatches:[...(previous.catalogBatches||[])]};
+  return validateState(next);
+}

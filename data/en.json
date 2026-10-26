@@ -1,1 +1,720 @@
-{"format":"school-vocabulary-v1","language":"en","lessons":[],"words":[]}
+{
+  "format": "school-vocabulary-v1",
+  "language": "en",
+  "batchId": "test-stations-2-3-20261026-v1",
+  "lessons": [
+    {
+      "id": "station-2",
+      "name": "Station 2"
+    },
+    {
+      "id": "station-3",
+      "name": "Station 3"
+    }
+  ],
+  "words": [
+    {
+      "id": "en-s2-account",
+      "term": "account",
+      "de": "das Konto",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "I have a savings {{word}} at the bank.",
+          "answer": "account",
+          "translation": "Ich habe ein Sparkonto bei der Bank.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-stylish",
+      "term": "stylish",
+      "de": "stylish; modisch gekleidet",
+      "type": "adjective",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "He's the most {{word}} person at school.",
+          "answer": "stylish",
+          "translation": "Er ist die am modischsten gekleidete Person an der Schule.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-sunglasses",
+      "term": "sunglasses",
+      "de": "die Sonnenbrille",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "She thinks it's cool to wear {{word}} at night, but I don't.",
+          "answer": "sunglasses",
+          "translation": "Sie findet es cool, nachts eine Sonnenbrille zu tragen, aber ich nicht.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-step-forward",
+      "term": "to step forward",
+      "de": "vortreten; nach vorn gehen",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "When you hear your name, please {{word}} and introduce yourself.",
+          "answer": "step forward",
+          "translation": "Wenn du deinen Namen hörst, tritt bitte vor und stelle dich vor.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-gun",
+      "term": "gun",
+      "de": "die Schusswaffe",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "A man with a {{word}} went into a shop and shouted, “Give me all your money!”",
+          "answer": "gun",
+          "translation": "Ein Mann mit einer Schusswaffe ging in ein Geschäft und rief: „Gib mir dein ganzes Geld!“",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-take-out",
+      "term": "to take out",
+      "de": "abheben (Geld)",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "There's no money in my account, so I can't {{word}} any money.",
+          "answer": "take out",
+          "translation": "Auf meinem Konto ist kein Geld, deshalb kann ich kein Geld abheben.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-buck",
+      "term": "buck",
+      "de": "der Dollar (AE, umgangssprachlich)",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "100 {{word}} = 100 dollars",
+          "answer": "bucks",
+          "translation": "100 Dollar = 100 Dollar",
+          "source": "textbook",
+          "reference": "Unit 1 · Station 2 · Foto B"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-turn-around",
+      "term": "to turn (a)round",
+      "de": "sich umdrehen; wenden",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "When they heard a voice behind them, they {{word}}.",
+          "answer": "turned around",
+          "translation": "Als sie hinter sich eine Stimme hörten, drehten sie sich um.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt",
+          "acceptedAnswers": [
+            "turned round"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-s2-handle",
+      "term": "to handle",
+      "de": "umgehen mit; bewältigen",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "Not everyone can {{word}} the competition on Broadway.",
+          "answer": "handle",
+          "translation": "Nicht jeder kann mit der Konkurrenz am Broadway umgehen.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-fool",
+      "term": "to fool",
+      "de": "täuschen; zum Narren halten",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "Don't try to {{word}} me. I know this money isn't yours!",
+          "answer": "fool",
+          "translation": "Versuch nicht, mich zu täuschen. Ich weiß, dass dieses Geld nicht dir gehört!",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-robber",
+      "term": "robber",
+      "de": "der Räuber; die Räuberin",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "Yesterday, {{word}} broke into a jewellery shop through a hole in the wall.",
+          "answer": "robbers",
+          "translation": "Gestern brachen Räuber durch ein Loch in der Wand in ein Juweliergeschäft ein.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-lucky-day",
+      "term": "lucky day",
+      "de": "der Glückstag",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto B",
+      "examples": [
+        {
+          "sentence": "Today was my {{word}}: I found some money in the street this morning!",
+          "answer": "lucky day",
+          "translation": "Heute war mein Glückstag: Ich habe heute Morgen auf der Straße etwas Geld gefunden!",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto B · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-robbery",
+      "term": "robbery",
+      "de": "der Raub",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "The police arrested our neighbor for a bank {{word}}. We couldn't believe it.",
+          "answer": "robbery",
+          "translation": "Die Polizei verhaftete unseren Nachbarn wegen eines Bankraubs. Wir konnten es nicht glauben.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-autograph",
+      "term": "autograph",
+      "de": "das Autogramm",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "When stars write their name on a photo for fans, they sign an {{word}}.",
+          "answer": "autograph",
+          "translation": "Wenn Stars für Fans ihren Namen auf ein Foto schreiben, geben sie ein Autogramm.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-latest",
+      "term": "latest",
+      "de": "neueste/-r/-s",
+      "type": "adjective",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "What's your {{word}} post about?",
+          "answer": "latest",
+          "translation": "Worum geht es in deinem neuesten Beitrag?",
+          "source": "textbook",
+          "reference": "Unit 1 · Station 2 · Foto A"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-rob",
+      "term": "to rob",
+      "de": "ausrauben; rauben; berauben",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "The man tried to {{word}} a shop.",
+          "answer": "rob",
+          "translation": "Der Mann versuchte, ein Geschäft auszurauben.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-walk-sb",
+      "term": "to walk sb",
+      "de": "jemanden begleiten",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "It's almost 11:00 p.m. Should I {{word}} home?",
+          "answer": "walk you",
+          "translation": "Es ist fast 23 Uhr. Soll ich dich nach Hause begleiten?",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-foot",
+      "term": "foot, feet",
+      "de": "der Fuß (Längenmaß: 30,48 cm)",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "I'm 1.82 m tall, that's about 6 {{word}}.",
+          "answer": "feet",
+          "translation": "Ich bin 1,82 m groß, das sind ungefähr 6 Fuß.",
+          "source": "textbook",
+          "reference": "Unit 1 · Station 2 · Foto A"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-breath",
+      "term": "breath",
+      "de": "der Atem; der Atemzug",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "Take a deep {{word}} before you speak.",
+          "answer": "breath",
+          "translation": "Hol tief Luft, bevor du sprichst.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-mix-up",
+      "term": "mix-up",
+      "de": "das Missverständnis; das Durcheinander",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "Sorry about the {{word}}: I sent you a message I had written for my dad.",
+          "answer": "mix-up",
+          "translation": "Entschuldige das Missverständnis: Ich habe dir eine Nachricht geschickt, die ich für meinen Vater geschrieben hatte.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-talented",
+      "term": "talented",
+      "de": "talentiert",
+      "type": "adjective",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "If you are {{word}} at something, you are very good at it.",
+          "answer": "talented",
+          "translation": "Wenn du in etwas talentiert bist, kannst du es sehr gut.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-application",
+      "term": "application",
+      "de": "die Bewerbung; der Antrag",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "If you want a job, you first have to send in an {{word}}.",
+          "answer": "application",
+          "translation": "Wenn du eine Stelle möchtest, musst du zuerst eine Bewerbung einreichen.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-keep-up",
+      "term": "to keep up",
+      "de": "aufrechterhalten; beibehalten",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto A",
+      "examples": [
+        {
+          "sentence": "{{word}} all the good work and maybe one day you'll have a career on Broadway.",
+          "answer": "Keep up",
+          "translation": "Mach weiter so gute Arbeit, dann machst du vielleicht eines Tages Karriere am Broadway.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-loss",
+      "term": "loss",
+      "de": "der Verlust",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto C",
+      "examples": [
+        {
+          "sentence": "The {{word}} of his wallet upset him.",
+          "answer": "loss",
+          "translation": "Der Verlust seiner Brieftasche machte ihn traurig.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto C · neu erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-zoo",
+      "term": "zoo",
+      "de": "der Zoo; der Tierpark",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto C",
+      "examples": [
+        {
+          "sentence": "We visited the {{word}} on Saturday.",
+          "answer": "zoo",
+          "translation": "Wir haben am Samstag den Zoo besucht.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto C · neu erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-host",
+      "term": "to host",
+      "de": "ausrichten (eine Veranstaltung); veranstalten",
+      "type": "verb",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto C",
+      "examples": [
+        {
+          "sentence": "Our school will {{word}} a workshop next week.",
+          "answer": "host",
+          "translation": "Unsere Schule wird nächste Woche einen Workshop veranstalten.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto C · neu erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-eyewitness",
+      "term": "eyewitness",
+      "de": "der Augenzeuge; die Augenzeugin",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto C",
+      "examples": [
+        {
+          "sentence": "An {{word}} saw what happened outside the shop.",
+          "answer": "eyewitness",
+          "translation": "Ein Augenzeuge sah, was vor dem Geschäft passiert ist.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto C · neu erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-time-slot",
+      "term": "time slot",
+      "de": "das Zeitfenster",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto C",
+      "examples": [
+        {
+          "sentence": "Please choose a {{word}} for your appointment.",
+          "answer": "time slot",
+          "translation": "Bitte wähle ein Zeitfenster für deinen Termin.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto C · neu erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "en-s2-apartment",
+      "term": "apartment",
+      "de": "das Apartment; die Wohnung",
+      "type": "noun",
+      "lessonIds": [
+        "station-2"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 2 · Foto C · AE",
+      "examples": [
+        {
+          "sentence": "They live in a small {{word}} in New York.",
+          "answer": "apartment",
+          "translation": "Sie wohnen in einer kleinen Wohnung in New York.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 2 · Foto C · AE · neu erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "en-s3-islamist",
+      "term": "Islamist",
+      "de": "der Islamist; die Islamistin; islamistisch",
+      "type": "noun",
+      "lessonIds": [
+        "station-3"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 3 · Foto A",
+      "examples": [
+        {
+          "sentence": "{{word}} are part of a radical political and religious movement.",
+          "answer": "Islamists",
+          "translation": "Islamisten gehören einer radikalen politischen und religiösen Bewegung an.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 3 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s3-hijack",
+      "term": "to hijack",
+      "de": "entführen",
+      "type": "verb",
+      "lessonIds": [
+        "station-3"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 3 · Foto A",
+      "examples": [
+        {
+          "sentence": "Modern pirates {{word}} ships to get money from the owners.",
+          "answer": "hijack",
+          "translation": "Moderne Piraten entführen Schiffe, um Geld von den Eigentümern zu bekommen.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 3 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s3-airplane",
+      "term": "airplane",
+      "de": "das Flugzeug",
+      "type": "noun",
+      "lessonIds": [
+        "station-3"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 3 · Foto A",
+      "examples": [
+        {
+          "sentence": "Boeing and Airbus produce {{word}}.",
+          "answer": "airplanes",
+          "translation": "Boeing und Airbus stellen Flugzeuge her.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 3 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s3-story",
+      "term": "story",
+      "de": "das Stockwerk (AE)",
+      "type": "noun",
+      "lessonIds": [
+        "station-3"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 3 · Foto A · AE",
+      "examples": [
+        {
+          "sentence": "Our house has three {{word}}.",
+          "answer": "stories",
+          "translation": "Unser Haus hat drei Stockwerke.",
+          "source": "textbook",
+          "reference": "Unit 1 · Station 3 · Foto A · AE"
+        }
+      ]
+    },
+    {
+      "id": "en-s3-survivor",
+      "term": "survivor",
+      "de": "der Überlebende; die Überlebende",
+      "type": "noun",
+      "lessonIds": [
+        "station-3"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 3 · Foto A",
+      "examples": [
+        {
+          "sentence": "There were no {{word}} from the accident.",
+          "answer": "survivors",
+          "translation": "Es gab keine Überlebenden des Unfalls.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 3 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    },
+    {
+      "id": "en-s3-shake",
+      "term": "to shake, shook, shaken",
+      "de": "schütteln",
+      "type": "verb",
+      "lessonIds": [
+        "station-3"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "Unit 1 · Station 3 · Foto A",
+      "examples": [
+        {
+          "sentence": "When she heard the bad news, she {{word}} her head again and again. She couldn't believe it.",
+          "answer": "shook",
+          "translation": "Als sie die schlechte Nachricht hörte, schüttelte sie immer wieder den Kopf. Sie konnte es nicht glauben.",
+          "source": "generated",
+          "reference": "Unit 1 · Station 3 · Foto A · aus dem sichtbaren Kontext ergänzt"
+        }
+      ]
+    }
+  ]
+}

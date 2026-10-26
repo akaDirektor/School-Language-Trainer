@@ -1,4 +1,4 @@
-import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup} from './core.js';
+import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage} from './core.js';
 import {demoState} from './demo.js';
 import {cloudConfig} from './cloud-config.js';
 import {createCloud} from './cloud.js';
@@ -54,7 +54,8 @@ function render(){
   const fields=[['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Bereit für Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
   $('allMetrics').replaceChildren(...fields.map(([label,value])=>{const el=node('div',label);el.append(node('b',value));return el;}));
   renderActivity();renderLessons();renderDictionary();updateMode();
-  document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
+  document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary,#resetLanguage').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
+  $('resetLanguage').textContent=names[language]+' · Wörter & Lernstand zurücksetzen';
   if(cloud.enabled){$('storageNoteText').textContent=parentView?'Elternansicht · Lernstand des Schülerkontos':cloudLocked?'Für geräteübergreifendes Lernen bitte anmelden':'Cloud-Synchronisation · derselbe Lernstand auf deinen Geräten';$('localCallout').hidden=true;}
   if(cloud.enabled){
     const connected=cloud.connected;
@@ -211,7 +212,7 @@ let lastRenderedDay=dayKey();
 async function loadSchoolVocabulary(){
   if(!seedSources.length)seedSources=await Promise.all(LANGUAGES.map(lang=>fetch(`./data/${lang}.json`).then(response=>{if(!response.ok)throw Error('Wörterdatei nicht erreichbar.');return response.json();})));
   if(!canWrite())return;
-  await mutate(()=>{let next=state;for(const source of seedSources)next=mergeVocabulary(next,source).state;if(JSON.stringify(next)!==JSON.stringify(state))commit(next);render();});
+  await mutate(()=>{let next=state;for(const source of seedSources)next=applyCatalog(next,source).state;if(JSON.stringify(next)!==JSON.stringify(state))commit(next);render();});
 }
 async function init(){
   try{lastRaw=localStorage.getItem(STORAGE_KEY);if(lastRaw)state=validateState(JSON.parse(lastRaw));const size=localStorage.getItem('school-language-trainer:text-size:v1');if(['large','largest'].includes(size)){document.documentElement.classList.add(size);$('textSize').value=size;}}
@@ -244,4 +245,13 @@ $('cloudLogin').onsubmit=async event=>{
 $('cloudSync').onclick=()=>cloud.sync();
 $('cloudLogout').onclick=()=>{try{cloud.logout();}catch(error){$('cloudStatus').textContent=error.message;}};
 $('loadCloudVersion').onclick=async()=>{download(backup(cloud.snapshot()||state),'school-konflikt-'+Date.now()+'.json');if(!confirm('Die lokale Version wurde gesichert. Jetzt die Cloud-Version laden?'))return;try{await cloud.loadCloud();storageOK=true;render();}catch(error){$('cloudStatus').textContent=error.message;}};
+$('resetLanguage').onclick=async()=>{
+  if(!canWrite())return;
+  const selected=language;
+  if(!confirm(names[selected]+': Alle Wörter, Lektionen und den Lernstand dieser Sprache zurücksetzen? Die andere Sprache bleibt erhalten. Vorher wird eine Sicherung heruntergeladen.'))return;
+  await mutate(()=>{
+    download(backup(state),'school-vor-zuruecksetzen-'+Date.now()+'.json');
+    if(commit(resetLanguage(state,selected))){stopTraining();selectedLessons=[];lessonMemory[selected]=[];seedSources=[];render();$('toolsDialog').close();notice(names[selected]+' wurde zurückgesetzt. Du kannst jetzt einen neuen Wortschatz importieren.');}
+  });
+};
 init().catch(error=>notice('Beim Start ist ein Fehler aufgetreten: '+error.message,true));
