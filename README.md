@@ -75,3 +75,9 @@ Imports are previewed before confirmation. Same-term entries merge lesson member
 ## Release loading and recovery
 
 Publication runs `node prepare-public.mjs`. All application modules and CSS use content-fingerprinted filenames; imports reference the matching dependency fingerprints. The service worker caches each complete release and avoids mixing cached scripts with newer dependencies. A separate small bootstrap keeps Settings and an update action available if the main module fails. Starting training before sign-in opens the account panel with an explanation. Recovery reloads with a fresh URL and does not clear local storage, sessions, vocabulary or progress.
+
+
+### Schreibblatt auf dem iPad
+Unter Aktiv erinnern → Antwort → Schreibblatt stehen 10, 15 (Standard) oder 20 Zeilen bereit. Die gewählten Lektionen und die Übersetzungsrichtung gelten auch hier. Die Seite wird gemeinsam geprüft; richtige und falsche Antworten zählen als Erinnern in der gewählten Richtung. Alle ausgewählten Wörter werden ohne Wiederholung durchlaufen, unabhängig vom mündlichen Erinnern. Ein neuer Durchgang startet erst ausdrücklich. Deutsche Nomen benötigen den gespeicherten Artikel; gespeicherte Übersetzungsalternativen werden akzeptiert.
+
+Die Felder unterstützen natives Apple Pencil Scribble (Einstellungen → Apple Pencil → Kritzeln), alternativ die Tastatur. iPadOS wandelt Handschrift lokal in Text um; geprüft wird dieser Text anhand des Wörterbuchs, keine Bewertung der Schriftform und kein externer OCR-Dienst. Erkannten Text vor Seite prüfen kontrollieren. Browserlayout und Prüfung getestet; tatsächliche Pencil-Erkennung muss auf dem iPad getestet werden.

@@ -1,4 +1,4 @@
-import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,matchingRound,matchingText,germanArticles,beginArticleMatch,answerGermanArticle,isLearned} from './core.js';
+import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,writingPage,gradeWritingPage,matchingRound,matchingText,germanArticles,beginArticleMatch,answerGermanArticle,isLearned} from './core.js';
 import {demoState} from './demo.js';
 import {cloudConfig} from './cloud-config.js';
 import {createCloud} from './cloud.js';
@@ -41,7 +41,7 @@ async function mutate(action){
   // All mutations below are synchronous; the raw-value check still protects stale tabs.
   return action();
 }
-function stopTraining(){current=null;articleQuestion=null;if($('germanArticleDialog').open)$('germanArticleDialog').close();$('training').hidden=true;}
+function stopTraining(){document.body.classList.remove('writing-active');current=null;articleQuestion=null;if($('germanArticleDialog').open)$('germanArticleDialog').close();$('training').hidden=true;}
 function accuracy(good,bad){return good+bad?Math.round(good/(good+bad)*100)+'%':'—';}
 function formatDate(day){return new Date(day+'T12:00:00').toLocaleDateString('de-DE',{day:'numeric',month:'short'});}
 function render(){
@@ -89,7 +89,7 @@ function updateMode(){
   $('focus').disabled=mode!=='cards';$('recallDirectionTools').hidden=mode!=='recall';
   const direction=$('recallDirection'),reverse=direction.value==='reverse';
   direction.options[0].textContent=names[language]+' → Deutsch';direction.options[1].textContent='Deutsch → '+names[language];
-  $('modeHelp').textContent=mode==='cards'?'Wähle ein Wort und die passende deutsche Karte. Alle Übungen sind unabhängig verfügbar.':mode==='recall'?'Erst im Kopf übersetzen, dann vergleichen. Richtung: '+(reverse?'Deutsch → '+names[language]:names[language]+' → Deutsch')+'.':'Setze das Wort in der passenden Form ein. Du kannst diese Übung sofort starten.';
+  $('modeHelp').textContent=mode==='cards'?'Wähle ein Wort und die passende deutsche Karte. Alle Übungen sind unabhängig verfügbar.':mode==='recall'?($('recallMethod').value==='written'?'Schreibblatt aus den gewählten Lektionen ausfüllen und gemeinsam prüfen. Mit Apple Pencil oder Tastatur. Richtung: ':'Erst im Kopf übersetzen, dann vergleichen. Richtung: ')+(reverse?'Deutsch → '+names[language]:names[language]+' → Deutsch')+'.':'Setze das Wort in der passenden Form ein. Du kannst diese Übung sofort starten.';
   const count=eligibleWords(book(),options()).length;$('startTraining').textContent=count?'Training starten · '+count+' →':'Training starten →';
 }
 function progressLabel(w,b=book()) {const st=wordStats(b,w.id);return isLearned(st)?'Vollständig gelernt':st.streak>=3?'3/3 zugeordnet · Erinnern oder Satz noch offen':st.streak?st.streak+' von 3 Karten':'Noch nicht gelernt';}
@@ -121,7 +121,7 @@ function showMatchingRound(scroll=false){
   if(pending){stopTraining();openGermanArticle(pending.id,null);return;}
   const round=matchingRound(book(),options(),language);
   if(!round.words.length){stopTraining();notice('Keine Wörter für diese Auswahl. Wähle andere Filter oder „Alle, auch gelernte Wörter“.');return;}
-  notice('');current={...round,mode:'cards',language,solved:new Set(),leftId:null,rightId:null,busy:false};
+  notice('');$('writingSheet').hidden=true;current={...round,mode:'cards',language,solved:new Set(),leftId:null,rightId:null,busy:false};
   $('training').hidden=false;$('matchingBoard').hidden=false;$('wordCard').hidden=true;$('hideTrainingWord').hidden=true;
   $('judgeButtons').hidden=true;$('contextNext').hidden=true;$('matchingNext').hidden=true;
   $('trainingMode').textContent='PAARE FINDEN';$('trainingTitle').textContent='Welche Karten gehören zusammen?';
@@ -210,6 +210,8 @@ $('germanArticleDialog').addEventListener('cancel',event=>{event.preventDefault(
 function showNext(scroll=false){
   if(!canWrite())return;
   if(mode==='cards'){showMatchingRound(scroll);return;}
+  if(mode==='recall'&&$('recallMethod').value==='written'){showWritingPage(scroll);return;}
+  $('writingSheet').hidden=true;
   const choice=nextWord(book(),options());
   if(!choice.word){stopTraining();notice(mode==='cards'?'Für diese Auswahl gibt es keine offenen Wörter. Füge Wörter hinzu oder wähle einen anderen Lernstand.':mode==='recall'?'Für diese Auswahl gibt es keine Wörter. Bitte andere Lektionen oder Filter wählen.':'Für diese Auswahl gibt es keine Beispielsätze. Bitte andere Lektionen wählen oder einen Satz ergänzen.');return;}
   notice('');const w=choice.word,examples=[...w.examples].sort((a,b)=>(a.source==='textbook'?0:1)-(b.source==='textbook'?0:1));
@@ -252,6 +254,52 @@ async function submitContext(){
   const ok=checkContext(typed,current.example);$('contextInput').disabled=true;$('checkContext').disabled=true;reveal();
   $('answerFeedback').textContent=ok?'✓ Richtig!':'Noch üben. Die passende Lösung ist: '+current.example.answer;$('answerFeedback').classList.toggle('wrong',!ok);
   await answer(ok);if(current&&storageOK){$('contextNext').hidden=false;$('contextNext').focus();}
+}
+function showWritingPage(scroll=false){
+  const direction=$('recallDirection').value,page=writingPage(book(),options(),Number($('writingPageSize').value));
+  if(!page.total){stopTraining();notice('Keine Wörter ausgewählt. Bitte eine Lektion wählen.');return;}
+  notice('');current={...page,mode:'recall',written:true,language,direction,answered:false,busy:false,rows:[]};
+  document.body.classList.add('writing-active');
+  $('training').hidden=false;$('matchingBoard').hidden=true;$('wordCard').hidden=true;$('writingSheet').hidden=false;
+  $('hideTrainingWord').hidden=true;$('judgeButtons').hidden=true;$('contextNext').hidden=true;
+  $('trainingMode').textContent='SCHREIBBLATT';$('trainingTitle').textContent='Schreib die Übersetzungen.';
+  const lessonNames=selectedLessons.length?book().lessons.filter(l=>selectedLessons.includes(l.id)).map(l=>l.name).join(', '):'Alle Lektionen';
+  $('trainingStatus').textContent=lessonNames+' · '+page.done+' / '+page.total+' geprüft'+(page.words.length?' · jetzt '+page.words.length+' Wörter':'');
+  $('sheetSourceLabel').textContent=direction==='reverse'?'Deutsch':names[language];
+  $('sheetTargetLabel').textContent=direction==='reverse'?names[language]+' · deine Übersetzung':'Deutsch · deine Übersetzung mit Artikel';
+  $('writingRows').replaceChildren(...page.words.map((word,i)=>{
+    const row=node('div',null,'writing-row'),label=node('label',(page.done+i+1)+'. '+recallPrompt(word,language,direction).text),cell=node('div',null,'writing-cell'),input=node('input');
+    input.id='writing-'+i;input.type='text';input.autocomplete='off';input.autocapitalize='off';input.spellcheck=false;input.setAttribute('autocorrect','off');input.lang=direction==='reverse'?language:'de';input.setAttribute('enterkeyhint',i===page.words.length-1?'done':'next');input.setAttribute('aria-describedby','writing-feedback-'+i);
+    label.htmlFor=input.id;label.lang=direction==='reverse'?'de':language;
+    const feedback=node('p',null,'writing-feedback');feedback.id='writing-feedback-'+i;feedback.hidden=true;
+    input.oninput=()=>input.setCustomValidity('');input.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();if(i<current.rows.length-1)current.rows[i+1].input.focus();else $('checkWritingSheet').click();}};
+    cell.append(input,feedback);row.append(label,cell);current.rows.push({row,input,feedback,word});return row;
+  }));
+  $('checkWritingSheet').hidden=!page.words.length;$('checkWritingSheet').disabled=false;
+  $('nextWritingSheet').hidden=!!page.words.length;$('nextWritingSheet').textContent='Neuer Durchgang ↻';
+  $('writingResult').textContent=page.words.length?'Alle Zeilen ausfüllen, dann die Seite prüfen.':'✓ Durchgang abgeschlossen: alle '+page.total+' Wörter geprüft.';
+  $('sessionStats').textContent=`Dieser Durchgang: ${session.good} richtig · ${session.bad} noch üben`;
+  if(scroll)window.scrollTo({top:0,behavior:'instant'});
+}
+async function submitWritingPage(event){
+  event.preventDefault();const page=current;
+  if(!page?.written||page.answered||page.busy||!canWrite())return;
+  for(const {input} of page.rows)if(!input.value.trim()){input.setCustomValidity('Bitte diese Übersetzung schreiben.');input.reportValidity();return;}
+  const answers=page.rows.map(r=>r.input.value);page.busy=true;$('checkWritingSheet').disabled=true;
+  await mutate(()=>{
+    if(current!==page)return;
+    try{
+      const graded=gradeWritingPage(state,page.language,page,answers,page.direction);
+      if(!commit(graded.state))return;
+      page.answered=true;const good=graded.results.filter(Boolean).length;session.good+=good;session.bad+=page.words.length-good;
+      page.rows.forEach(({row,input,feedback,word},i)=>{
+        const ok=graded.results[i];input.readOnly=true;input.setAttribute('aria-invalid',String(!ok));row.classList.add(ok?'writing-correct':'writing-wrong');feedback.hidden=false;feedback.textContent=ok?'✓ Richtig':'✗ Lösung: '+(page.direction==='reverse'?word.term:word.de);
+      });
+      render();$('writingResult').textContent=good+' von '+page.words.length+' richtig · '+(page.words.length-good)+' noch üben';
+      $('checkWritingSheet').hidden=true;$('nextWritingSheet').hidden=false;$('nextWritingSheet').textContent=page.done+page.words.length>=page.total?'Durchgang abschließen ✓':'Nächste Seite →';
+      $('sessionStats').textContent=`Dieser Durchgang: ${session.good} richtig · ${session.bad} noch üben`;
+    }catch(error){notice(error.message,true);}
+  });page.busy=false;if(current===page&&!page.answered)$('checkWritingSheet').disabled=false;
 }
 function openWord(word=null){
   editingId=word?.id||null;$('wordForm').reset();$('wordFormError').textContent='';$('wordDialogTitle').textContent=word?'Wort bearbeiten':'Wort hinzufügen';$('termLabel').textContent=names[language]+' · Wort oder Wendung';$('term').lang=language;
@@ -302,9 +350,10 @@ document.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>$(b
 document.querySelectorAll('[data-language]').forEach(button=>button.onclick=()=>{if(language===button.dataset.language)return;stopTraining();language=button.dataset.language;selectedLessons=[...lessonMemory[language]];$('search').value='';shownWords=30;render();});
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{mode=button.dataset.mode;stopTraining();render();});
 document.querySelectorAll('[data-progress]').forEach(button=>button.onclick=()=>openProgress(button.dataset.progress));
-for(const id of ['focus','type','period','recallDirection'])$(id).onchange=()=>{stopTraining();render();};
+for(const id of ['focus','type','period','recallDirection','recallMethod','writingPageSize'])$(id).onchange=()=>{stopTraining();render();};
 $('search').oninput=()=>{shownWords=30;renderDictionary();};$('showHidden').onchange=renderDictionary;$('showMore').onclick=()=>{shownWords+=30;renderDictionary();};
 $('startTraining').onclick=startTraining;$('stopTraining').onclick=stopTraining;$('revealAnswer').onclick=reveal;$('answerCorrect').onclick=()=>answer(true);$('answerWrong').onclick=()=>answer(false);$('checkContext').onclick=submitContext;$('contextNext').onclick=()=>showNext();
+$('writingSheet').onsubmit=submitWritingPage;$('nextWritingSheet').onclick=async()=>{const page=current;if(!page?.written||page.busy)return;if(!page.words.length){await mutate(()=>{if(current!==page)return;const next=clone(state);delete next.languages[language].cycles[page.scope];if(commit(next)){session={good:0,bad:0};showWritingPage(true);}});}else showWritingPage(true);};
 $('contextInput').oninput=()=>{$('contextInput').setCustomValidity('');};$('contextInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submitContext();}};
 $('hideTrainingWord').onclick=()=>{if(current&&confirm('Dieses Wort ausblenden? Du kannst es im Wörterbuch wieder einblenden.'))toggleHidden(current.id);};
 $('addWord').onclick=()=>openWord();$('wordForm').onsubmit=saveWord;$('addLesson').onclick=()=>{$('lessonForm').reset();$('lessonDialog').showModal();};

@@ -139,6 +139,46 @@ export function activity(book,day=dayKey()) {
 }
 export function promptTerm(word,lang) { return lang === 'es' && word.type === 'noun' ? word.term.replace(/^(el|la|los|las)\s+/i,'') : word.term; }
 export function recallPrompt(word,language,direction='forward'){return direction==='reverse'?{text:word.de,language:'de'}:{text:word.term,language};}
+// Accept stored alternatives, retaining German articles and meaningful accents.
+export function recallAnswers(word,direction='forward'){
+  const raw=direction==='reverse'?word.term:word.de;
+  const parts=direction==='reverse'?raw.split(/[;,]/):raw.split(/;|\s+\/\s+/);
+  const answers=[raw];
+  for(const part of parts){
+    const clean=part.replace(/\s*\((?!a\))[^)]*\)/g,'').trim();
+    const forms=clean.includes('(a)')?[clean.replace('(a)',''),clean.replace('(a)','a')]:[clean];
+    for(const form of forms){
+      const suffixes=form.split('/-'),base=suffixes.shift();
+      for(const value of [base,...suffixes.map(suffix=>base+suffix)]){
+        answers.push(value);
+        if(direction==='reverse'&&/^to\s+/i.test(value))answers.push(value.replace(/^to\s+/i,''));
+      }
+    }
+  }
+  return [...new Set(answers.map(normalize))].filter(Boolean);
+}
+export function writingPage(book,options,pageSize=15){
+  if(![10,15,20].includes(pageSize))throw Error('Ungültige Seitengröße.');
+  const pool=eligibleWords(book,{...options,mode:'recall'}),scope=scopeKey({...options,mode:'recall'})+'|written';
+  const seen=(book.cycles[scope]||[]).filter(id=>pool.some(w=>w.id===id));
+  const remaining=pool.filter(w=>!seen.includes(w.id));
+  return {words:remaining.slice(0,pageSize),scope,seen,total:pool.length,done:seen.length};
+}
+export function gradeWritingPage(state,language,page,answers,direction='forward',day=dayKey()){
+  if(!page.words.length||page.words.length!==answers.length||new Set(page.words.map(w=>w.id)).size!==page.words.length||answers.some(a=>typeof a!=='string'||!a.trim()))throw Error('Bitte alle Zeilen ausfüllen.');
+  if(typeof page.scope!=='string'||!page.scope.endsWith('|written')||!Array.isArray(page.seen))throw Error('Ungültiges Schreibblatt.');
+  let next=state;const results=[];
+  for(let i=0;i<page.words.length;i++){
+    const w=state.languages[language].words.find(w=>w.id===page.words[i].id);
+    if(!w||page.seen.includes(w.id)||(state.languages[language].cycles[page.scope]||[]).includes(w.id))throw Error('Dieses Schreibblatt wurde bereits geprüft. Bitte neu starten.');
+    const ok=checkRecall(answers[i],w,direction);results.push(ok);next=recordAnswer(next,language,w.id,'recall',ok,day,direction);
+  }
+  next.languages[language].cycles[page.scope]=[...new Set([...page.seen,...page.words.map(w=>w.id)])];
+  return {state:next,results};
+}
+export function checkRecall(input,word,direction='forward'){
+  return recallAnswers(word,direction).includes(normalize(input));
+}
 export function matchingText(word,language,side,solved=false){if(side==='left')return solved?word.term:promptTerm(word,language);return solved?word.de:word.de.replace(/\b(der|die|das)\s+/gi,'');}
 export function germanArticles(word){
   if(!word)return [];
