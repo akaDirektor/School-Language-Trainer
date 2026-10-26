@@ -55,6 +55,10 @@ export function validateVocabulary(raw) {
 export function validateState(raw) {
   if(!raw || raw.schema !== 1 || !raw.languages || LANGUAGES.some(lang => !raw.languages[lang])) throw Error('Diese Sicherung gehört nicht zu School Language Trainer.');
   const state = emptyState();
+  if(raw.preferences!=null){
+    if(typeof raw.preferences!=='object'||Array.isArray(raw.preferences)||typeof raw.preferences.requireGermanArticles!=='boolean')throw Error('Ungültige Artikel-Einstellung.');
+    state.preferences={requireGermanArticles:raw.preferences.requireGermanArticles};
+  }
   for(const lang of LANGUAGES) {
     const input = raw.languages[lang], target = state.languages[lang];
     if(input.catalogBatches!=null&&(!Array.isArray(input.catalogBatches)||input.catalogBatches.length>10000))throw Error('Ungültige Importhistorie.');
@@ -90,7 +94,7 @@ export function recordAnswer(state,lang,wordId,mode,ok,day = dayKey(),direction=
   const next = clone(state), book = next.languages[lang];
   if(!book || !book.words.some(w => w.id === wordId) || book.hidden.includes(wordId) || !validDay(day) || typeof ok !== 'boolean' || !['cards','recall','context'].includes(mode)) throw Error('Ungültige Antwort.');
   const st = wordStats(book,wordId);
-  if(mode === 'cards') { st[ok?'correct':'wrong']++; st.streak = ok ? st.streak+1 : 0; st.mastered = st.streak >= 3; }
+  if(mode === 'cards') { if(ok)delete st.pendingArticle;st[ok?'correct':'wrong']++; st.streak = ok ? st.streak+1 : 0; st.mastered = st.streak >= 3; }
   if(mode === 'recall') {if(!['forward','reverse'].includes(direction))throw Error('Ungültige Richtung.');st[ok?'recallCorrect':'recallWrong']++;const field='recall'+(direction==='reverse'?'Reverse':'Forward')+(ok?'Correct':'Wrong');st[field]=(st[field]||0)+1;}
   if(mode === 'context') { st[ok?'contextCorrect':'contextWrong']++; st.contextStreak = ok ? st.contextStreak+1 : 0; }
   st.workedDays = [...new Set([...st.workedDays,day])].sort().slice(-366); book.stats[wordId] = st;
@@ -171,13 +175,17 @@ export function gradeWritingPage(state,language,page,answers,direction='forward'
   for(let i=0;i<page.words.length;i++){
     const w=state.languages[language].words.find(w=>w.id===page.words[i].id);
     if(!w||page.seen.includes(w.id)||(state.languages[language].cycles[page.scope]||[]).includes(w.id))throw Error('Dieses Schreibblatt wurde bereits geprüft. Bitte neu starten.');
-    const ok=checkRecall(answers[i],w,direction);results.push(ok);next=recordAnswer(next,language,w.id,'recall',ok,day,direction);const stats=next.languages[language].stats[w.id],field=ok?'writingCorrect':'writingWrong';stats[field]=(stats[field]||0)+1;
+    const ok=checkRecall(answers[i],w,direction,germanArticlesRequired(state));results.push(ok);next=recordAnswer(next,language,w.id,'recall',ok,day,direction);const stats=next.languages[language].stats[w.id],field=ok?'writingCorrect':'writingWrong';stats[field]=(stats[field]||0)+1;
   }
   next.languages[language].cycles[page.scope]=[...new Set([...page.seen,...page.words.map(w=>w.id)])];
   return {state:next,results};
 }
-export function checkRecall(input,word,direction='forward'){
-  return recallAnswers(word,direction).includes(normalize(input));
+export function germanArticlesRequired(state){return state.preferences?.requireGermanArticles!==false;}
+export function shouldAskGermanArticle(state,word){return germanArticlesRequired(state)&&germanArticles(word).length>0;}
+export function checkRecall(input,word,direction='forward',requireArticles=true){
+  const answers=recallAnswers(word,direction);
+  if(direction==='forward'&&!requireArticles)answers.push(...answers.map(a=>a.replace(/^(der|die|das)\s+/i,'')));
+  return answers.includes(normalize(input));
 }
 export function matchingText(word,language,side,solved=false){if(side==='left')return solved?word.term:promptTerm(word,language);return solved?word.de:word.de.replace(/\b(der|die|das)\s+/gi,'');}
 export function germanArticles(word){

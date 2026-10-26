@@ -1,4 +1,4 @@
-import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,writingPage,gradeWritingPage,matchingRound,matchingText,germanArticles,beginArticleMatch,answerGermanArticle,isLearned} from './core.js';
+import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,writingPage,gradeWritingPage,matchingRound,matchingText,germanArticles,germanArticlesRequired,shouldAskGermanArticle,beginArticleMatch,answerGermanArticle,isLearned} from './core.js';
 import {demoState} from './demo.js';
 import {cloudConfig} from './cloud-config.js';
 import {createCloud} from './cloud.js';
@@ -45,7 +45,7 @@ function stopTraining(){document.body.classList.remove('writing-active');current
 function accuracy(good,bad){return good+bad?Math.round(good/(good+bad)*100)+'%':'—';}
 function formatDate(day){return new Date(day+'T12:00:00').toLocaleDateString('de-DE',{day:'numeric',month:'short'});}
 function render(){
-  const b=book(),s=summarize(b);
+  const b=book(),s=summarize(b);$('requireGermanArticles').checked=germanArticlesRequired(state);$('requireGermanArticles').disabled=!canWrite();$('articleRequirementStatus').textContent=germanArticlesRequired(state)?'Eingeschaltet · Artikel werden abgefragt.':'Ausgeschaltet · deutsche Artikel sind optional.';$('matchingArticleNote').textContent=germanArticlesRequired(state)?'Aktuelle Serie · mit richtigem Artikel':'Aktuelle Serie · ohne Artikelfrage';
   document.querySelectorAll('[data-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.language===language)));
   document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));
   $('languageEyebrow').textContent=names[language].toUpperCase()+' LERNEN';$('todayMetric').textContent=s.today;$('databaseMetric').textContent=s.databaseTotal;$('activeMetricNote').textContent=s.total+' aktiv · '+b.hidden.length+' ausgeblendet';
@@ -118,7 +118,7 @@ function startTraining(){
 }
 function showMatchingRound(scroll=false){
   const pending=book().words.find(w=>!book().hidden.includes(w.id)&&book().stats[w.id]?.pendingArticle);
-  if(pending){stopTraining();openGermanArticle(pending.id,null);return;}
+  if(pending&&germanArticlesRequired(state)){stopTraining();openGermanArticle(pending.id,null);return;}
   const round=matchingRound(book(),options(),language);
   if(!round.words.length){stopTraining();notice('Keine Wörter für diese Auswahl. Wähle andere Filter oder „Alle, auch gelernte Wörter“.');return;}
   notice('');$('writingSheet').hidden=true;current={...round,mode:'cards',language,solved:new Set(),leftId:null,rightId:null,busy:false};
@@ -142,7 +142,7 @@ async function selectMatching(side,id,round){
   for(const columnSide of ['left','right'])for(const button of $(columnSide==='left'?'matchingLeft':'matchingRight').children)button.setAttribute('aria-pressed',String(button.dataset.wordId===round[columnSide==='left'?'leftId':'rightId']));
   if(!round.leftId||!round.rightId)return;
   round.busy=true;const leftId=round.leftId,rightId=round.rightId,ok=leftId===rightId;
-  if(ok&&germanArticles(book().words.find(w=>w.id===leftId)).length){
+  if(ok&&shouldAskGermanArticle(state,book().words.find(w=>w.id===leftId))){
     await mutate(()=>{if(current!==round)return;const next=beginArticleMatch(state,round.language,leftId,round.scope);if(commit(next)){render();openGermanArticle(leftId,round);}});
     if(current===round&&!articleQuestion)round.busy=false;return;
   }
@@ -266,7 +266,7 @@ function showWritingPage(scroll=false){
   const lessonNames=selectedLessons.length?book().lessons.filter(l=>selectedLessons.includes(l.id)).map(l=>l.name).join(', '):'Alle Lektionen';
   $('trainingStatus').textContent=lessonNames+' · '+page.done+' / '+page.total+' geprüft'+(page.words.length?' · jetzt '+page.words.length+' Wörter':'');
   $('sheetSourceLabel').textContent=direction==='reverse'?'Deutsch':names[language];
-  $('sheetTargetLabel').textContent=direction==='reverse'?names[language]+' · deine Übersetzung':'Deutsch · deine Übersetzung mit Artikel';
+  $('sheetTargetLabel').textContent=direction==='reverse'?names[language]+' · deine Übersetzung':(germanArticlesRequired(state)?'Deutsch · deine Übersetzung mit Artikel':'Deutsch · Artikel optional');
   $('writingRows').replaceChildren(...page.words.map((word,i)=>{
     const row=node('div',null,'writing-row'),label=node('label',(page.done+i+1)+'. '+recallPrompt(word,language,direction).text),cell=node('div',null,'writing-cell'),input=node('input');
     input.id='writing-'+i;input.type='text';input.autocomplete='off';input.autocapitalize='off';input.spellcheck=false;input.setAttribute('autocorrect','off');input.lang=direction==='reverse'?language:'de';input.setAttribute('enterkeyhint',i===page.words.length-1?'done':'next');input.setAttribute('aria-describedby','writing-feedback-'+i);
@@ -365,6 +365,7 @@ $('vocabularyFile').onchange=async e=>{vocabCandidate=null;$('importVocabulary')
 $('importVocabulary').onclick=async()=>{if(!vocabCandidate)return;await mutate(()=>{try{const result=mergeVocabulary(state,vocabCandidate);if(commit(result.state)){stopTraining();const lang=vocabCandidate.language;vocabCandidate=null;$('importVocabulary').disabled=true;language=lang;selectedLessons=[...lessonMemory[lang]];render();$('toolsDialog').close();notice(result.added+' neue Wörter übernommen.');}}catch(error){$('vocabularyPreview').textContent=error.message;}});};
 $('exportVocabulary').onclick=()=>download({format:'school-vocabulary-v1',language,lessons:book().lessons,words:book().words},`school-vocabulary-${language}${demo?'-demo':''}-${dayKey()}.json`);
 $('openReport').onclick=openReport;$('downloadReport').onclick=()=>download(buildReport(),`school-lernuebersicht${demo?'-demo':''}-${dayKey()}.json`);$('demoToggle').onclick=$('exitDemo').onclick=toggleDemo;
+$('requireGermanArticles').onchange=async()=>{const requireArticles=$('requireGermanArticles').checked;await mutate(()=>{const next=clone(state);next.preferences={...next.preferences,requireGermanArticles:requireArticles};if(commit(next)){stopTraining();notice(requireArticles?'Deutsche Artikel werden wieder abgefragt.':'Artikelfragen ausgeschaltet. Deutsche Artikel sind auf dem Schreibblatt optional.');}});render();};
 $('textSize').onchange=()=>{document.documentElement.classList.remove('large','largest');if($('textSize').value!=='normal')document.documentElement.classList.add($('textSize').value);try{localStorage.setItem('school-language-trainer:text-size:v1',$('textSize').value);}catch{}};
 addEventListener('storage',event=>{if(!demo&&((event.key===STORAGE_KEY&&!cloud.enabled)||(cloud.enabled&&event.key?.startsWith('school-language-trainer:cloud-'))))storageFailure('Ein anderes Fenster hat den Lernstand geändert. Bitte diese Seite neu laden.');});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(dayKey()!==lastRenderedDay){lastRenderedDay=dayKey();render();}if(!demo&&storageOK&&!cloud.enabled){try{if(localStorage.getItem(STORAGE_KEY)!==lastRaw)storageFailure('Der Lernstand wurde in einem anderen Fenster geändert. Bitte neu laden.');}catch{storageFailure('Der Browser-Speicher ist nicht verfügbar.');}}}});
