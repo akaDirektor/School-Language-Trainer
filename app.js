@@ -1,4 +1,4 @@
-import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,matchingRound,matchingText,germanArticles,beginArticleMatch,answerGermanArticle} from './core.js';
+import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,matchingRound,matchingText,germanArticles,beginArticleMatch,answerGermanArticle,isLearned} from './core.js';
 import {demoState} from './demo.js';
 import {cloudConfig} from './cloud-config.js';
 import {createCloud} from './cloud.js';
@@ -48,12 +48,12 @@ function render(){
   const b=book(),s=summarize(b);
   document.querySelectorAll('[data-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.language===language)));
   document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));
-  $('languageEyebrow').textContent=names[language].toUpperCase()+' LERNEN';$('todayMetric').textContent=s.today;$('todayTotal').textContent='/ '+s.total+' Wörter';
-  $('readyMetric').textContent=s.ready;$('onceMetric').textContent=s.once;$('twiceMetric').textContent=s.twice;$('accuracyMetric').textContent=accuracy(s.correct,s.wrong);
-  const percent=s.total?Math.round(s.ready/s.total*100):0;$('masteryLabel').textContent=s.ready+' von '+s.total+' Wörtern 3-mal zugeordnet';$('masteryPercent').textContent=percent+'%';$('masteryBar').style.width=percent+'%';
+  $('languageEyebrow').textContent=names[language].toUpperCase()+' LERNEN';$('todayMetric').textContent=s.today;$('databaseMetric').textContent=s.databaseTotal;$('activeMetricNote').textContent=s.total+' aktiv · '+b.hidden.length+' ausgeblendet';
+  $('matchingHitsMetric').textContent=s.databaseCorrect;$('readyMetric').textContent=s.databaseReady;$('onceMetric').textContent=s.databaseOnce;$('twiceMetric').textContent=s.databaseTwice;$('learnedMetric').textContent=s.databaseLearned;$('learnedTotal').textContent=s.databaseTotal;
+  const percent=s.databaseTotal?Math.round(s.databaseLearned/s.databaseTotal*100):0;$('masteryLabel').textContent=s.databaseLearned+' von '+s.databaseTotal+' Wörtern vollständig gelernt';$('masteryPercent').textContent=percent+'%';$('masteryBar').style.width=percent+'%';
   $('wordCount').textContent=s.total+' Wörter';$('demoBanner').hidden=!demo;$('demoToggle').textContent=demo?'Demo beenden ↗':'Demo ausprobieren ↗';
   const directional=field=>b.words.filter(w=>!b.hidden.includes(w.id)).reduce((sum,w)=>sum+(wordStats(b,w.id)[field]||0),0);
-  const fields=[['Artikel · richtig / falsch',directional('articleCorrect')+' / '+directional('articleWrong')],['Artikel · Treffsicherheit',accuracy(directional('articleCorrect'),directional('articleWrong'))],['Erinnern · '+names[language]+' → DE',directional('recallForwardCorrect')+' / '+directional('recallForwardWrong')],['Erinnern · DE → '+names[language],directional('recallReverseCorrect')+' / '+directional('recallReverseWrong')],['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Wörter mit Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
+  const fields=[['Wörter in der Datenbank',s.databaseTotal],['Vollständig gelernt',s.databaseLearned],['Zuordnen · Treffsicherheit',accuracy(s.correct,s.wrong)],['Artikel · richtig / falsch',directional('articleCorrect')+' / '+directional('articleWrong')],['Artikel · Treffsicherheit',accuracy(directional('articleCorrect'),directional('articleWrong'))],['Erinnern · '+names[language]+' → DE',directional('recallForwardCorrect')+' / '+directional('recallForwardWrong')],['Erinnern · DE → '+names[language],directional('recallReverseCorrect')+' / '+directional('recallReverseWrong')],['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Wörter mit Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
   $('allMetrics').replaceChildren(...fields.map(([label,value])=>{const el=node('div',label);el.append(node('b',value));return el;}));
   renderActivity();renderLessons();renderDictionary();updateMode();
   document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary,#resetLanguage,#resetProgress').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
@@ -79,7 +79,7 @@ function renderLessons(){
   $('lessonChoices').replaceChildren(all,...book().lessons.map(lesson=>{
     const button=node('button',lesson.name);button.type='button';button.setAttribute('aria-pressed',String(selectedLessons.includes(lesson.id)));button.onclick=()=>{selectedLessons=selectedLessons.includes(lesson.id)?selectedLessons.filter(id=>id!==lesson.id):[...selectedLessons,lesson.id];lessonMemory[language]=[...selectedLessons];stopTraining();render();};return button;
   }));
-  const base=eligibleWords(book(),{...options(),mode:'cards',focus:'all'}),unmastered=base.filter(w=>!wordStats(book(),w.id).mastered);
+  const base=eligibleWords(book(),{...options(),mode:'cards',focus:'all'}),unmastered=base.filter(w=>!isLearned(wordStats(book(),w.id)));
   $('lessonStatus').textContent=base.length+' Wörter in deiner Auswahl · '+unmastered.length+' noch nicht gelernt'+(book().lessons.length?' · mehrere Lektionen kombinierbar':' · Lektionen kannst du frei benennen');
 }
 function updateMode(){
@@ -89,7 +89,7 @@ function updateMode(){
   $('modeHelp').textContent=mode==='cards'?'Wähle ein Wort und die passende deutsche Karte. Alle Übungen sind unabhängig verfügbar.':mode==='recall'?'Erst im Kopf übersetzen, dann vergleichen. Richtung: '+(reverse?'Deutsch → '+names[language]:names[language]+' → Deutsch')+'.':'Setze das Wort in der passenden Form ein. Du kannst diese Übung sofort starten.';
   const count=eligibleWords(book(),options()).length;$('startTraining').textContent=count?'Training starten · '+count+' →':'Training starten →';
 }
-function progressLabel(w,b=book()) {const st=wordStats(b,w.id);return st.mastered?'3-mal richtig zugeordnet':st.streak?Math.min(st.streak,3)+' von 3 Karten':'Noch nicht gelernt';}
+function progressLabel(w,b=book()) {const st=wordStats(b,w.id);return isLearned(st)?'Vollständig gelernt':st.streak>=3?'3/3 zugeordnet · Erinnern oder Satz noch offen':st.streak?st.streak+' von 3 Karten':'Noch nicht gelernt';}
 function renderDictionary(){
   const query=normalize($('search').value),b=book();
   const words=b.words.filter(w=>(!b.hidden.includes(w.id)||$('showHidden').checked)&&(!query||normalize(w.term+' '+w.de).includes(query)));
@@ -271,14 +271,14 @@ function buildReport(){
 function openReport(){
   const report=buildReport();$('reportContent').replaceChildren(...LANGUAGES.map(lang=>{
     const r=report.languages[lang],s=r.summary,section=node('section',null,'report-language');section.append(node('h3',r.language));
-    const values=node('div',null,'report-values');for(const [label,value]of [['Heute geübt',s.today+' / '+s.total],['3-mal richtig zugeordnet',s.ready],['Aktiv erinnert · 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong]]){const v=node('div',label);v.append(node('b',value));values.append(v);}section.append(values);
-    const table=node('table',null,'report-table'),head=node('thead'),hr=node('tr');for(const label of ['Lektion','Wörter','Bereit','Heute']){const th=node('th',label);th.scope='col';hr.append(th);}head.append(hr);table.append(head);const body=node('tbody');for(const l of r.lessons){const row=node('tr');for(const value of [l.name,l.total,l.ready,l.today])row.append(node('td',value));body.append(row);}table.append(body);if(r.lessons.length)section.append(table);
+    const values=node('div',null,'report-values');for(const [label,value]of [['Heute geübt',s.today+' / '+s.total],['3-mal richtig zugeordnet',s.ready],['Vollständig gelernt',s.databaseLearned+' / '+s.databaseTotal],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong]]){const v=node('div',label);v.append(node('b',value));values.append(v);}section.append(values);
+    const table=node('table',null,'report-table'),head=node('thead'),hr=node('tr');for(const label of ['Lektion','Wörter','Gelernt','Heute']){const th=node('th',label);th.scope='col';hr.append(th);}head.append(hr);table.append(head);const body=node('tbody');for(const l of r.lessons){const row=node('tr');for(const value of [l.name,l.databaseTotal,l.databaseLearned,l.today])row.append(node('td',value));body.append(row);}table.append(body);if(r.lessons.length)section.append(table);
     const mistakes=node('p',r.wordsWithMistakes.length?'Zum Wiederholen: '+r.wordsWithMistakes.slice(0,20).map(w=>w.term).join(', '):'Noch keine Wörter mit Fehlern.','fine-print');section.append(mistakes);return section;
   }));$('reportDialog').showModal();
 }
 function openProgress(view){
-  const titles={once:'1 von 3 Karten richtig',twice:'2 von 3 Karten richtig',mistakes:'Wörter mit Fehlern'};const b=book();$('progressTitle').textContent=titles[view];
-  const words=b.words.filter(w=>{if(b.hidden.includes(w.id))return false;const s=wordStats(b,w.id);return view==='once'?!s.mastered&&s.streak===1:view==='twice'?!s.mastered&&s.streak===2:s.wrong||s.recallWrong||s.contextWrong||s.articleWrong;});
+  const titles={once:'1 von 3 Zuordnungen richtig',twice:'2 von 3 Zuordnungen richtig',three:'3 von 3 Zuordnungen richtig',learned:'Vollständig gelernte Wörter',mistakes:'Wörter mit Fehlern'};const b=book();$('progressTitle').textContent=titles[view];
+  const words=b.words.filter(w=>{const st=wordStats(b,w.id);return view==='once'?st.streak===1:view==='twice'?st.streak===2:view==='three'?st.streak>=3:view==='learned'?isLearned(st):st.wrong||st.recallWrong||st.contextWrong||st.articleWrong;});
   $('progressWords').replaceChildren(...words.map(w=>{const s=wordStats(b,w.id);return node('p',w.term+' · '+w.de+'\nKarten: '+s.correct+' / '+s.wrong+' · Erinnern: '+s.recallCorrect+' / '+s.recallWrong+' · Kontext: '+s.contextCorrect+' / '+s.contextWrong+' · Artikel: '+(s.articleCorrect||0)+' / '+(s.articleWrong||0));}));if(!words.length)$('progressWords').append(node('p','Hier gibt es noch keine Wörter.'));$('progressDialog').showModal();
 }
 function toggleDemo(){

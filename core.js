@@ -85,6 +85,7 @@ export function validateState(raw) {
 export function wordStats(book, wordId) {
   return book.stats[wordId] || {correct:0,wrong:0,streak:0,mastered:false,recallCorrect:0,recallWrong:0,contextCorrect:0,contextWrong:0,contextStreak:0,workedDays:[]};
 }
+export function isLearned(stats){return stats.streak>=3&&stats.recallCorrect>0&&stats.contextCorrect>0;}
 export function recordAnswer(state,lang,wordId,mode,ok,day = dayKey(),direction='forward') {
   const next = clone(state), book = next.languages[lang];
   if(!book || !book.words.some(w => w.id === wordId) || book.hidden.includes(wordId) || !validDay(day) || typeof ok !== 'boolean' || !['cards','recall','context'].includes(mode)) throw Error('Ungültige Antwort.');
@@ -102,7 +103,7 @@ export function eligibleWords(book,{mode='cards',lessonIds=[],focus='unmastered'
     const age = (Date.parse(day+'T12:00:00Z')-Date.parse(w.addedAt+'T12:00:00Z'))/86400000;
     if(period !== 'all' && !(age >= 0 && age < Number(period))) return false;
     if(mode !== 'cards') return mode !== 'context' || w.examples.length > 0;
-    if(focus === 'unmastered' && st.mastered) return false;
+    if(focus === 'unmastered' && isLearned(st)) return false;
     if(focus === 'weak' && !(st.wrong || st.recallWrong || st.contextWrong || st.articleWrong)) return false;
     return true;
   });
@@ -121,10 +122,11 @@ export function nextWord(book,options,random=Math.random) {
   return {word:available[Math.min(available.length-1,Math.floor(random()*available.length))],scope,seen:[...seen]};
 }
 export function summarize(book,day=dayKey()) {
-  const words=book.words.filter(w=>!book.hidden.includes(w.id)), result={total:words.length,today:0,ready:0,once:0,twice:0,activeKnown:0,correct:0,wrong:0,recallCorrect:0,recallWrong:0,contextCorrect:0,contextWrong:0,contextReady:0,mistakes:0};
+  const words=book.words.filter(w=>!book.hidden.includes(w.id)), result={databaseTotal:book.words.length,databaseCorrect:0,databaseOnce:0,databaseTwice:0,databaseReady:0,databaseLearned:0,total:words.length,today:0,ready:0,once:0,twice:0,learned:0,activeKnown:0,correct:0,wrong:0,recallCorrect:0,recallWrong:0,contextCorrect:0,contextWrong:0,contextReady:0,mistakes:0};
+  for(const w of book.words){const st=wordStats(book,w.id);result.databaseCorrect+=st.correct;if(st.streak===1)result.databaseOnce++;if(st.streak===2)result.databaseTwice++;if(st.streak>=3)result.databaseReady++;if(isLearned(st))result.databaseLearned++;}
   for(const w of words) {
-    const st=wordStats(book,w.id); if(st.workedDays.includes(day))result.today++; if(st.mastered)result.ready++;
-    if(!st.mastered && st.streak === 1)result.once++; if(!st.mastered && st.streak === 2)result.twice++;
+    const st=wordStats(book,w.id); if(st.workedDays.includes(day))result.today++; if(st.streak>=3)result.ready++;if(isLearned(st))result.learned++;
+    if(st.streak === 1)result.once++; if(st.streak === 2)result.twice++;
     if(st.recallCorrect >= 3)result.activeKnown++;
     if(w.examples.length)result.contextReady++;
     if(st.wrong || st.recallWrong || st.contextWrong || st.articleWrong)result.mistakes++;
