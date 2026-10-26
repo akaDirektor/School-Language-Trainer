@@ -71,6 +71,7 @@ export function validateState(raw) {
       id(key); if(!ids.has(key) || !value || typeof value !== 'object') throw Error('Lernstand ohne Wort.');
       const st = {};
       for(const name of counters) { if((/^recall(Forward|Reverse)/.test(name)||/^article/.test(name)||/^writing/.test(name))&&value[name]==null)continue;const n = value[name] ?? 0; if(!Number.isSafeInteger(n) || n < 0) throw Error('Ungültiger Zähler.'); st[name] = n; }
+      if(value.writingNeedsRetry!=null){if(typeof value.writingNeedsRetry!=='boolean')throw Error('Ungültige Schreibwiederholung.');st.writingNeedsRetry=value.writingNeedsRetry;}
       if(value.pendingArticle!=null){const p=value.pendingArticle,w=target.words.find(w=>w.id===key);if(!p||typeof p.scope!=='string'||p.scope.length>1000||!Number.isSafeInteger(p.index)||p.index<0||p.index>=germanArticles(w).length||typeof p.hadError!=='boolean')throw Error('Ungültige offene Artikelfrage.');st.pendingArticle={scope:p.scope,index:p.index,hadError:p.hadError};}
       if(typeof value.mastered !== 'boolean') throw Error('Ungültiger Lernstatus.'); st.mastered = value.mastered;
       if(!Array.isArray(value.workedDays) || value.workedDays.length > 366 || value.workedDays.some(d => !validDay(d))) throw Error('Ungültiger Tagesverlauf.');
@@ -89,7 +90,7 @@ export function validateState(raw) {
 export function wordStats(book, wordId) {
   return book.stats[wordId] || {correct:0,wrong:0,streak:0,mastered:false,recallCorrect:0,recallWrong:0,contextCorrect:0,contextWrong:0,contextStreak:0,workedDays:[]};
 }
-export function isLearned(stats){return stats.streak>=3&&stats.recallCorrect>0&&stats.contextCorrect>0;}
+export function isLearned(stats){return stats.streak>=3&&stats.recallCorrect>0&&stats.contextCorrect>0&&(stats.writingCorrect||0)>=3;}
 export function recordAnswer(state,lang,wordId,mode,ok,day = dayKey(),direction='forward') {
   const next = clone(state), book = next.languages[lang];
   if(!book || !book.words.some(w => w.id === wordId) || book.hidden.includes(wordId) || !validDay(day) || typeof ok !== 'boolean' || !['cards','recall','context'].includes(mode)) throw Error('Ungültige Antwort.');
@@ -126,8 +127,8 @@ export function nextWord(book,options,random=Math.random) {
   return {word:available[Math.min(available.length-1,Math.floor(random()*available.length))],scope,seen:[...seen]};
 }
 export function summarize(book,day=dayKey()) {
-  const words=book.words.filter(w=>!book.hidden.includes(w.id)), result={databaseTotal:book.words.length,databaseCorrect:0,databaseOnce:0,databaseTwice:0,databaseReady:0,databaseLearned:0,databaseRecallPassed:0,databaseContextPassed:0,databaseWritingPassed:0,total:words.length,today:0,ready:0,once:0,twice:0,learned:0,activeKnown:0,correct:0,wrong:0,recallCorrect:0,recallWrong:0,contextCorrect:0,contextWrong:0,contextReady:0,mistakes:0};
-  for(const w of book.words){const st=wordStats(book,w.id);result.databaseCorrect+=st.correct;if(st.streak===1)result.databaseOnce++;if(st.streak===2)result.databaseTwice++;if(st.streak>=3)result.databaseReady++;if(isLearned(st))result.databaseLearned++;if(st.recallCorrect>0)result.databaseRecallPassed++;if(st.contextCorrect>0)result.databaseContextPassed++;if(st.writingCorrect>0)result.databaseWritingPassed++;}
+  const words=book.words.filter(w=>!book.hidden.includes(w.id)), result={databaseTotal:book.words.length,databaseCorrect:0,databaseOnce:0,databaseTwice:0,databaseReady:0,databaseLearned:0,databaseRecallPassed:0,databaseContextPassed:0,databaseWritingPassed:0,databaseWritingMastered:0,total:words.length,today:0,ready:0,once:0,twice:0,learned:0,activeKnown:0,correct:0,wrong:0,recallCorrect:0,recallWrong:0,contextCorrect:0,contextWrong:0,contextReady:0,mistakes:0};
+  for(const w of book.words){const st=wordStats(book,w.id);result.databaseCorrect+=st.correct;if(st.streak===1)result.databaseOnce++;if(st.streak===2)result.databaseTwice++;if(st.streak>=3)result.databaseReady++;if(isLearned(st))result.databaseLearned++;if(st.recallCorrect>0)result.databaseRecallPassed++;if(st.contextCorrect>0)result.databaseContextPassed++;if(st.writingCorrect>0)result.databaseWritingPassed++;if(st.writingCorrect>=3)result.databaseWritingMastered++;}
   for(const w of words) {
     const st=wordStats(book,w.id); if(st.workedDays.includes(day))result.today++; if(st.streak>=3)result.ready++;if(isLearned(st))result.learned++;
     if(st.streak === 1)result.once++; if(st.streak === 2)result.twice++;
@@ -164,20 +165,23 @@ export function recallAnswers(word,direction='forward'){
 export function writingPage(book,options,pageSize=15){
   if(![10,15,20].includes(pageSize))throw Error('Ungültige Seitengröße.');
   const pool=eligibleWords(book,{...options,mode:'recall'}),scope=scopeKey({...options,mode:'recall'})+'|written';
-  const seen=(book.cycles[scope]||[]).filter(id=>pool.some(w=>w.id===id));
-  const remaining=pool.filter(w=>!seen.includes(w.id));
-  return {words:remaining.slice(0,pageSize),scope,seen,total:pool.length,done:seen.length};
+  const pending=pool.filter(w=>(wordStats(book,w.id).writingCorrect||0)<3);
+  const retries=pending.filter(w=>wordStats(book,w.id).writingNeedsRetry);
+  const minimum=pending.length?Math.min(...pending.map(w=>wordStats(book,w.id).writingCorrect||0)):0;
+  const words=(retries.length?retries:pending.filter(w=>(wordStats(book,w.id).writingCorrect||0)===minimum)).slice(0,pageSize);
+  const baseline=Object.fromEntries(words.map(w=>{const s=wordStats(book,w.id);return [w.id,{correct:s.writingCorrect||0,wrong:s.writingWrong||0}];}));
+  return {words,scope,seen:[],baseline,total:pool.length,done:pool.length-pending.length,retry:retries.length>0};
 }
 export function gradeWritingPage(state,language,page,answers,direction='forward',day=dayKey()){
   if(!page.words.length||page.words.length!==answers.length||new Set(page.words.map(w=>w.id)).size!==page.words.length||answers.some(a=>typeof a!=='string'||!a.trim()))throw Error('Bitte alle Zeilen ausfüllen.');
-  if(typeof page.scope!=='string'||!page.scope.endsWith('|written')||!Array.isArray(page.seen))throw Error('Ungültiges Schreibblatt.');
+  if(typeof page.scope!=='string'||!page.scope.endsWith('|written')||!page.baseline)throw Error('Ungültiges Schreibblatt.');
   let next=state;const results=[];
   for(let i=0;i<page.words.length;i++){
-    const w=state.languages[language].words.find(w=>w.id===page.words[i].id);
-    if(!w||page.seen.includes(w.id)||(state.languages[language].cycles[page.scope]||[]).includes(w.id))throw Error('Dieses Schreibblatt wurde bereits geprüft. Bitte neu starten.');
-    const ok=checkRecall(answers[i],w,direction,germanArticlesRequired(state));results.push(ok);next=recordAnswer(next,language,w.id,'recall',ok,day,direction);const stats=next.languages[language].stats[w.id],field=ok?'writingCorrect':'writingWrong';stats[field]=(stats[field]||0)+1;
+    const w=state.languages[language].words.find(w=>w.id===page.words[i].id),st=w&&wordStats(state.languages[language],w.id),before=page.baseline[page.words[i].id];
+    if(!w||!before||(st.writingCorrect||0)>=3||before.correct!==(st.writingCorrect||0)||before.wrong!==(st.writingWrong||0))throw Error('Dieses Schreibblatt wurde bereits geprüft oder geändert. Bitte neu starten.');
+    const ok=checkRecall(answers[i],w,direction,germanArticlesRequired(state));results.push(ok);next=recordAnswer(next,language,w.id,'recall',ok,day,direction);
+    const stats=next.languages[language].stats[w.id],field=ok?'writingCorrect':'writingWrong';stats[field]=(stats[field]||0)+1;stats.writingNeedsRetry=!ok;
   }
-  next.languages[language].cycles[page.scope]=[...new Set([...page.seen,...page.words.map(w=>w.id)])];
   return {state:next,results};
 }
 export function germanArticlesRequired(state){return state.preferences?.requireGermanArticles===true;}

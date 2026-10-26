@@ -23,40 +23,41 @@ test('each catalogue word has writable answers in both directions; checking is p
  const state=applyCatalog(emptyState(),corpus).state;const w=word('en-s2-account');const next=recordAnswer(state,'en',w.id,'recall',checkRecall('account',w,'reverse'),'2026-10-26','reverse');const stats=next.languages.en.stats[w.id];assert.equal(stats.recallReverseCorrect,1);assert.equal(stats.correct,0);assert.equal(stats.contextCorrect,0);
 });
 
-test('writing pages follow the selected lessons without repeats and grade every row atomically',async()=>{
- const {writingPage,gradeWritingPage}=await import('../core.js');let state=applyCatalog(emptyState(),corpus).state;
- const options={mode:'recall',focus:'all',type:'all',period:'all',lessonIds:['station-2'],direction:'forward'};
- const original=JSON.stringify(state),first=writingPage(state.languages.en,options,15);assert.equal(first.words.length,15);assert.equal(first.total,29);
- assert.throws(()=>gradeWritingPage(state,'en',first,first.words.map(()=>'')));
- assert.equal(JSON.stringify(state),original);
- const answers=first.words.map(w=>recallAnswers(w)[0]);answers[0]='wrong';
- const graded=gradeWritingPage(state,'en',first,answers);assert.equal(graded.results.filter(Boolean).length,14);assert.equal(JSON.stringify(state),original);state=graded.state;
- assert.throws(()=>gradeWritingPage(state,'en',first,answers));
- const second=writingPage(state.languages.en,options,15);assert.equal(second.words.length,14);assert.equal(second.done,15);assert.ok(second.words.every(w=>!first.words.some(v=>v.id===w.id)));
- state=gradeWritingPage(state,'en',second,second.words.map(w=>recallAnswers(w)[0])).state;
- assert.equal(writingPage(state.languages.en,options,15).words.length,0);
- assert.equal(writingPage(state.languages.en,{...options,lessonIds:['station-3']},15).words.length,6);
- assert.equal(writingPage(state.languages.en,{...options,direction:'reverse'},15).done,0);
- assert.equal(state.languages.en.stats[first.words[0].id].recallForwardWrong,1);
- assert.equal(state.languages.en.stats[first.words[1].id].recallForwardCorrect,1);
- assert.equal(state.languages.en.stats[first.words[1].id].correct,0);
-});
-
-test('written successes are counted separately, survive validation and backups, and count each word once',async()=>{
+test('writing sheets retry only mistakes and continue until every selected word has three successes',async()=>{
  const {writingPage,gradeWritingPage,summarize,validateState,backup,parseBackup,resetProgress}=await import('../core.js');
  let state=applyCatalog(emptyState(),corpus).state;
  const options={mode:'recall',focus:'all',type:'all',period:'all',lessonIds:['station-3'],direction:'reverse'};
- let page=writingPage(state.languages.en,options,15),answers=page.words.map(w=>recallAnswers(w,'reverse')[0]);answers[0]='wrong';
- state=gradeWritingPage(state,'en',page,answers,'reverse').state;
- assert.equal(summarize(state.languages.en).databaseWritingPassed,5);
- assert.equal(state.languages.en.stats[page.words[0].id].writingWrong,1);
- assert.equal(state.languages.en.stats[page.words[1].id].writingCorrect,1);
- assert.deepEqual(parseBackup(backup(state)),state);assert.deepEqual(validateState(state),state);
- delete state.languages.en.cycles[page.scope];page=writingPage(state.languages.en,options,15);
- state=gradeWritingPage(state,'en',page,page.words.map(w=>recallAnswers(w,'reverse')[0]),'reverse').state;
- state.languages.en.hidden=[page.words[1].id];assert.equal(summarize(state.languages.en).databaseWritingPassed,6);assert.equal(state.languages.en.stats[page.words[1].id].writingCorrect,2);
- assert.equal(summarize(state.languages.es).databaseWritingPassed,0);assert.equal(summarize(resetProgress(state,'en').languages.en).databaseWritingPassed,0);
- const bad=structuredClone(state);bad.languages.en.stats[page.words[1].id].writingCorrect=-1;assert.throws(()=>validateState(bad));
+ const initial=writingPage(state.languages.en,options,15);assert.equal(initial.words.length,6);assert.equal(initial.total,6);assert.equal(initial.done,0);
+ const original=structuredClone(state),answers=initial.words.map(w=>recallAnswers(w,'reverse')[0]);answers[0]='wrong';
+ assert.throws(()=>gradeWritingPage(state,'en',initial,initial.words.map(()=>'')));
+ const graded=gradeWritingPage(state,'en',initial,answers,'reverse');assert.deepEqual(state,original);state=graded.state;
+ assert.equal(graded.results.filter(Boolean).length,5);assert.equal(summarize(state.languages.en).databaseWritingPassed,5);assert.equal(summarize(state.languages.en).databaseWritingMastered,0);assert.throws(()=>gradeWritingPage(state,'en',initial,answers,'reverse'));
+ assert.deepEqual(parseBackup(backup(state)),state);
+ let retry=writingPage(parseBackup(backup(state)).languages.en,options,15);assert.equal(retry.retry,true);assert.deepEqual(retry.words.map(w=>w.id),[initial.words[0].id]);
+ state=gradeWritingPage(state,'en',retry,[recallAnswers(retry.words[0],'reverse')[0]],'reverse').state;
+ assert.equal(summarize(state.languages.en).databaseWritingPassed,6);
+ let round2=writingPage(state.languages.en,options,15);assert.equal(round2.retry,false);assert.equal(round2.words.length,6);
+ const secondAnswers=round2.words.map(w=>recallAnswers(w,'reverse')[0]);secondAnswers[1]='wrong';state=gradeWritingPage(state,'en',round2,secondAnswers,'reverse').state;
+ assert.equal(state.languages.en.stats[round2.words[1].id].writingCorrect,1);assert.equal(state.languages.en.stats[round2.words[1].id].writingWrong,1);
+ retry=writingPage(state.languages.en,options,15);assert.equal(retry.words.length,1);assert.equal(retry.words[0].id,round2.words[1].id);
+ state=gradeWritingPage(state,'en',retry,[recallAnswers(retry.words[0],'reverse')[0]],'reverse').state;
+ const round3=writingPage(state.languages.en,options,15);assert.equal(round3.words.length,6);state=gradeWritingPage(state,'en',round3,round3.words.map(w=>recallAnswers(w,'reverse')[0]),'reverse').state;
+ assert.equal(summarize(state.languages.en).databaseWritingMastered,6);assert.equal(writingPage(state.languages.en,options,15).words.length,0);assert.equal(writingPage(state.languages.en,options,15).done,6);
+ assert.equal(writingPage(state.languages.en,{...options,direction:'forward'},15).words.length,0);
+ state.languages.en.hidden=[round3.words[1].id];assert.equal(summarize(state.languages.en).databaseWritingMastered,6);assert.equal(summarize(state.languages.es).databaseWritingMastered,0);
+ assert.deepEqual(validateState(state),state);assert.equal(summarize(resetProgress(state,'en').languages.en).databaseWritingMastered,0);
+ const bad=structuredClone(state);bad.languages.en.stats[round3.words[1].id].writingCorrect=-1;assert.throws(()=>validateState(bad));
+ bad.languages.en.stats[round3.words[1].id].writingCorrect=3;bad.languages.en.stats[round3.words[1].id].writingNeedsRetry='yes';assert.throws(()=>validateState(bad));
+});
+test('writing pages preserve lesson filters and paginate new words before another success round',async()=>{
+ const {writingPage,gradeWritingPage}=await import('../core.js');let state=applyCatalog(emptyState(),corpus).state;
+ const options={mode:'recall',focus:'all',type:'all',period:'all',lessonIds:['station-2'],direction:'forward'};
+ const first=writingPage(state.languages.en,options,15);assert.equal(first.words.length,15);assert.equal(first.total,29);
+ state=gradeWritingPage(state,'en',first,first.words.map(w=>recallAnswers(w)[0])).state;
+ const second=writingPage(state.languages.en,options,15);assert.equal(second.words.length,14);assert.ok(second.words.every(w=>!first.words.some(v=>v.id===w.id)));
+ state=gradeWritingPage(state,'en',second,second.words.map(w=>recallAnswers(w)[0])).state;
+ assert.equal(writingPage(state.languages.en,options,15).words.length,15);assert.equal(writingPage(state.languages.en,options,15).done,0);
+ assert.equal(writingPage(state.languages.en,{...options,lessonIds:['station-3']},15).words.length,6);
 });
 test('historical recall answers do not fabricate written successes',async()=>{
  const {summarize,validateState}=await import('../core.js');let state=applyCatalog(emptyState(),corpus).state;
