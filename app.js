@@ -202,6 +202,11 @@ $('textSize').onchange=()=>{document.documentElement.classList.remove('large','l
 addEventListener('storage',event=>{if(!demo&&((event.key===STORAGE_KEY&&!cloud.enabled)||(cloud.enabled&&event.key?.startsWith('school-language-trainer:cloud-'))))storageFailure('Ein anderes Fenster hat den Lernstand geändert. Bitte diese Seite neu laden.');});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(dayKey()!==lastRenderedDay){lastRenderedDay=dayKey();render();}if(!demo&&storageOK&&!cloud.enabled){try{if(localStorage.getItem(STORAGE_KEY)!==lastRaw)storageFailure('Der Lernstand wurde in einem anderen Fenster geändert. Bitte neu laden.');}catch{storageFailure('Der Browser-Speicher ist nicht verfügbar.');}}}});
 let lastRenderedDay=dayKey();
+async function loadSchoolVocabulary(){
+  if(!seedSources.length)seedSources=await Promise.all(LANGUAGES.map(lang=>fetch(`./data/${lang}.json`).then(response=>{if(!response.ok)throw Error('Wörterdatei nicht erreichbar.');return response.json();})));
+  if(!canWrite())return;
+  await mutate(()=>{let next=state;for(const source of seedSources)next=mergeVocabulary(next,source).state;if(JSON.stringify(next)!==JSON.stringify(state))commit(next);render();});
+}
 async function init(){
   try{lastRaw=localStorage.getItem(STORAGE_KEY);if(lastRaw)state=validateState(JSON.parse(lastRaw));const size=localStorage.getItem('school-language-trainer:text-size:v1');if(['large','largest'].includes(size)){document.documentElement.classList.add(size);$('textSize').value=size;}}
   catch(error){storageOK=false;notice('Gespeicherte Daten konnten nicht gelesen werden. Das Original wurde nicht überschrieben. '+error.message,true);}
@@ -209,17 +214,16 @@ async function init(){
   await cloud.init();
   $('cloudLogin').hidden=!cloud.enabled;$('cloudNotConfigured').hidden=cloud.enabled;$('demoToggle').hidden=cloud.enabled;
   if(cloud.enabled){$('reportCloudNote').textContent='Mit dem Elternkonto kannst du den synchronisierten Lernstand ansehen.';}
-  if(storageOK&&!cloud.enabled){
+  if(storageOK){
     try{
-      seedSources=await Promise.all(LANGUAGES.map(lang=>fetch(`./data/${lang}.json`).then(response=>{if(!response.ok)throw Error('Wörterdatei nicht erreichbar.');return response.json();})));
-      await mutate(()=>{let next=state;for(const source of seedSources)next=mergeVocabulary(next,source).state;if(JSON.stringify(next)!==JSON.stringify(state))commit(next);render();});
+      await loadSchoolVocabulary();
     }catch(error){notice('Der gespeicherte Wortschatz ist verfügbar. Schulbuch-Dateien konnten gerade nicht geladen werden: '+error.message,true);}
   }
   if('serviceWorker' in navigator){try{await navigator.serviceWorker.register('./sw.js');}catch{/* The app remains usable online when offline caching is unavailable. */}}
 }
 init();
 
-$('cloudLogin').onsubmit=async event=>{event.preventDefault();const button=$('cloudLoginButton');button.disabled=true;try{if(Object.values(state.languages).some(b=>b.words.length)&&!cloud.enabled)return;await cloud.login($('loginEmail').value,$('loginPassword').value);$('loginPassword').value='';render();}catch(error){$('cloudStatus').textContent=error.message;}finally{button.disabled=false;}};
+$('cloudLogin').onsubmit=async event=>{event.preventDefault();const button=$('cloudLoginButton');button.disabled=true;try{if(Object.values(state.languages).some(b=>b.words.length)&&!cloud.enabled)return;await cloud.login($('loginEmail').value,$('loginPassword').value);$('loginPassword').value='';await loadSchoolVocabulary();render();}catch(error){$('cloudStatus').textContent=error.message;}finally{button.disabled=false;}};
 $('cloudSync').onclick=()=>cloud.sync();
 $('cloudLogout').onclick=()=>{try{cloud.logout();}catch(error){$('cloudStatus').textContent=error.message;}};
 $('loadCloudVersion').onclick=async()=>{download(backup(cloud.snapshot()||state),'school-konflikt-'+Date.now()+'.json');if(!confirm('Die lokale Version wurde gesichert. Jetzt die Cloud-Version laden?'))return;try{await cloud.loadCloud();storageOK=true;render();}catch(error){$('cloudStatus').textContent=error.message;}};
