@@ -7,8 +7,8 @@
   <meta name="description" content="Dein Schulwortschatz. Englisch und Spanisch lernen, Schritt für Schritt.">
   <title>Wort für Wort · School Language Trainer</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-180.png">
-  <link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="app.css?v=20261026-mastery1">
-  <script type="module" src="app.js?v=20261026-mastery1"></script>
+  <link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="app.css?v=20261026-flags1">
+  <script type="module" src="app.js?v=20261026-flags1"></script>
 </head>
 <body>
 <a class="skip" href="#main">Zum Inhalt</a>
@@ -23,7 +23,7 @@
   <div class="storage-note"><span class="status-dot"></span><span id="storageNoteText">Auf diesem Gerät gespeichert · Cloud-Verbindung folgt später</span></div>
   <div id="accountBanner" class="account-banner" hidden><span id="accountState" role="status"></span><button id="accountAction" class="secondary">Anmelden →</button></div>
   <main id="main">
-    <section class="intro"><div><p class="eyebrow" id="languageEyebrow">ENGLISCH LERNEN</p><h1>Ein Wort mehr.<br>Ein Schritt weiter.</h1><p>Deine Wörter aus dem Unterricht.<br class="mobile-break"> In deinem Tempo.</p></div><div class="intro-art" aria-hidden="true"><span class="art-label">WISSEN WÄCHST</span><div class="art-card back">Aa</div><div class="art-card front">Wort<br><span>für Wort.</span><i>↗</i></div><span class="art-spark">✳</span></div></section>
+    <section class="intro"><div><p class="eyebrow hero-language-label"><img id="languageFlag" src="flags/gb.svg" width="27" height="17" alt=""><span id="languageEyebrow">ENGLISCH LERNEN</span></p><h1>Ein Wort mehr.<br>Ein Schritt weiter.</h1><p>Deine Wörter aus dem Unterricht.<br class="mobile-break"> In deinem Tempo.</p></div><div class="intro-art" id="languageArtwork" data-language="en" aria-hidden="true"><span class="art-label">WISSEN WÄCHST</span><div class="art-card back">Aa</div><div class="art-card front">Wort<br><span>für Wort.</span><i>↗</i></div><span class="art-spark">✳</span><div class="language-seal"><img id="heroFlag" src="flags/gb.svg" width="56" height="34" alt=""><span id="heroLanguageName">English</span></div></div></section>
     <section class="metric-grid" aria-label="Dein Fortschritt">
       <div class="metric"><span class="metric-label">Wörter in der Datenbank</span><div><strong id="databaseMetric">0</strong><span>Wörter</span></div><small><span id="activeMetricNote">0 aktiv · 0 ausgeblendet</span><br>Heute geübt: <b id="todayMetric">0</b></small></div>
       <div class="metric"><span class="metric-label">Richtige Wortpaare</span><div><strong id="matchingHitsMetric">0</strong><span>insgesamt</span></div><small class="matching-steps"><button data-progress="once">1/3: <b id="onceMetric">0</b></button><button data-progress="twice">2/3: <b id="twiceMetric">0</b></button><button data-progress="three">3/3: <b id="readyMetric">0</b></button></small><small>Aktuelle Serie · mit richtigem Artikel</small></div>

@@ -49,6 +49,8 @@ function render(){
   document.querySelectorAll('[data-language]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.language===language)));
   document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));
   $('languageEyebrow').textContent=names[language].toUpperCase()+' LERNEN';$('todayMetric').textContent=s.today;$('databaseMetric').textContent=s.databaseTotal;$('activeMetricNote').textContent=s.total+' aktiv · '+b.hidden.length+' ausgeblendet';
+  const flag=language==='es'?'./flags/es.svg':'./flags/gb.svg';
+  $('heroFlag').src=flag;$('languageFlag').src=flag;$('heroLanguageName').textContent=language==='es'?'Español':'English';$('languageArtwork').dataset.language=language;
   $('matchingHitsMetric').textContent=s.databaseCorrect;$('readyMetric').textContent=s.databaseReady;$('onceMetric').textContent=s.databaseOnce;$('twiceMetric').textContent=s.databaseTwice;$('learnedMetric').textContent=s.databaseLearned;$('learnedTotal').textContent=s.databaseTotal;
   const percent=s.databaseTotal?Math.round(s.databaseLearned/s.databaseTotal*100):0;$('masteryLabel').textContent=s.databaseLearned+' von '+s.databaseTotal+' Wörtern vollständig gelernt';$('masteryPercent').textContent=percent+'%';$('masteryBar').style.width=percent+'%';
   $('wordCount').textContent=s.total+' Wörter';$('demoBanner').hidden=!demo;$('demoToggle').textContent=demo?'Demo beenden ↗':'Demo ausprobieren ↗';
