@@ -1,9 +1,10 @@
-import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,recallPrompt,matchingRound,matchingText} from './core.js';
+import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,recallPrompt,matchingRound,matchingText,germanArticles,beginArticleMatch,answerGermanArticle} from './core.js';
 import {demoState} from './demo.js';
 import {cloudConfig} from './cloud-config.js';
 import {createCloud} from './cloud.js';
 const $=id=>document.getElementById(id), names={en:'Englisch',es:'Spanisch'}, typeNames={noun:'Nomen',verb:'Verb',adjective:'Adjektiv',adverb:'Adverb',phrase:'Wendung',other:'Andere'};
 let state=emptyState(),language='en',mode='cards',selectedLessons=[],demo=false,realState=null,storageOK=true,lastRaw=null,current=null,editingId=null,shownWords=30,session={good:0,bad:0},vocabCandidate=null,backupCandidate=null,seedSources=[];
+let articleQuestion=null;
 const lessonMemory={en:[],es:[]};
 let cloudLocked=Boolean(cloudConfig.url&&cloudConfig.publishableKey),parentView=false;
 const cloud=createCloud(cloudConfig,{
@@ -40,7 +41,7 @@ async function mutate(action){
   // All mutations below are synchronous; the raw-value check still protects stale tabs.
   return action();
 }
-function stopTraining(){current=null;$('training').hidden=true;}
+function stopTraining(){current=null;articleQuestion=null;if($('germanArticleDialog').open)$('germanArticleDialog').close();$('training').hidden=true;}
 function accuracy(good,bad){return good+bad?Math.round(good/(good+bad)*100)+'%':'—';}
 function formatDate(day){return new Date(day+'T12:00:00').toLocaleDateString('de-DE',{day:'numeric',month:'short'});}
 function render(){
@@ -52,7 +53,7 @@ function render(){
   const percent=s.total?Math.round(s.ready/s.total*100):0;$('masteryLabel').textContent=s.ready+' von '+s.total+' Wörtern 3-mal zugeordnet';$('masteryPercent').textContent=percent+'%';$('masteryBar').style.width=percent+'%';
   $('wordCount').textContent=s.total+' Wörter';$('demoBanner').hidden=!demo;$('demoToggle').textContent=demo?'Demo beenden ↗':'Demo ausprobieren ↗';
   const directional=field=>b.words.filter(w=>!b.hidden.includes(w.id)).reduce((sum,w)=>sum+(wordStats(b,w.id)[field]||0),0);
-  const fields=[['Erinnern · '+names[language]+' → DE',directional('recallForwardCorrect')+' / '+directional('recallForwardWrong')],['Erinnern · DE → '+names[language],directional('recallReverseCorrect')+' / '+directional('recallReverseWrong')],['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Wörter mit Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
+  const fields=[['Artikel · richtig / falsch',directional('articleCorrect')+' / '+directional('articleWrong')],['Artikel · Treffsicherheit',accuracy(directional('articleCorrect'),directional('articleWrong'))],['Erinnern · '+names[language]+' → DE',directional('recallForwardCorrect')+' / '+directional('recallForwardWrong')],['Erinnern · DE → '+names[language],directional('recallReverseCorrect')+' / '+directional('recallReverseWrong')],['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Wörter mit Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
   $('allMetrics').replaceChildren(...fields.map(([label,value])=>{const el=node('div',label);el.append(node('b',value));return el;}));
   renderActivity();renderLessons();renderDictionary();updateMode();
   document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary,#resetLanguage').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
@@ -105,6 +106,8 @@ function renderDictionary(){
 async function toggleHidden(id){await mutate(()=>{const next=clone(state),b=next.languages[language];b.hidden=b.hidden.includes(id)?b.hidden.filter(k=>k!==id):[...b.hidden,id];if(commit(next)){stopTraining();render();}});}
 function startTraining(){session={good:0,bad:0};showNext(true);}
 function showMatchingRound(scroll=false){
+  const pending=book().words.find(w=>!book().hidden.includes(w.id)&&book().stats[w.id]?.pendingArticle);
+  if(pending){stopTraining();openGermanArticle(pending.id,null);return;}
   const round=matchingRound(book(),options(),language);
   if(!round.words.length){stopTraining();notice('Keine Wörter für diese Auswahl. Wähle andere Filter oder „Alle, auch gelernte Wörter“.');return;}
   notice('');current={...round,mode:'cards',language,solved:new Set(),leftId:null,rightId:null,busy:false};
@@ -128,6 +131,10 @@ async function selectMatching(side,id,round){
   for(const columnSide of ['left','right'])for(const button of $(columnSide==='left'?'matchingLeft':'matchingRight').children)button.setAttribute('aria-pressed',String(button.dataset.wordId===round[columnSide==='left'?'leftId':'rightId']));
   if(!round.leftId||!round.rightId)return;
   round.busy=true;const leftId=round.leftId,rightId=round.rightId,ok=leftId===rightId;
+  if(ok&&germanArticles(book().words.find(w=>w.id===leftId)).length){
+    await mutate(()=>{if(current!==round)return;const next=beginArticleMatch(state,round.language,leftId,round.scope);if(commit(next)){render();openGermanArticle(leftId,round);}});
+    if(current===round&&!articleQuestion)round.busy=false;return;
+  }
   await mutate(()=>{
     if(current!==round)return;
     const next=recordAnswer(state,round.language,leftId,'cards',ok);
@@ -149,6 +156,46 @@ async function selectMatching(side,id,round){
   if(current===round)round.busy=false;
 }
 $('matchingNext').onclick=()=>{if(current?.mode==='cards'&&current.solved.size===current.words.length)showMatchingRound();};
+function openGermanArticle(wordId,round){
+  const word=book().words.find(w=>w.id===wordId),pending=book().stats[wordId]?.pendingArticle;if(!word||!pending)return;
+  const questions=germanArticles(word),question=questions[pending.index];
+  articleQuestion={wordId,round,language,answered:false,question};
+  $('germanArticleNoun').textContent=question.noun;$('germanArticleTarget').textContent=word.term;
+  $('germanArticleStep').textContent='Deutsche Übersetzung · '+(pending.index+1)+' von '+questions.length;
+  $('germanArticleFeedback').textContent='Wähle der, die oder das.';$('germanArticleFeedback').classList.remove('article-wrong');$('germanArticleContinue').hidden=true;
+  document.querySelectorAll('[data-german-article]').forEach(button=>{button.disabled=false;button.classList.remove('article-right');});
+  if(!$('germanArticleDialog').open)$('germanArticleDialog').showModal();
+}
+async function chooseGermanArticle(article){
+  const q=articleQuestion;if(!q||q.answered||!canWrite()||q.language!==language)return;
+  q.answered=true;document.querySelectorAll('[data-german-article]').forEach(button=>button.disabled=true);
+  await mutate(()=>{
+    if(articleQuestion!==q)return;
+    const result=answerGermanArticle(state,q.language,q.wordId,article);
+    if(!commit(result.state))return;
+    q.complete=result.complete;q.credited=result.credited;
+    $('germanArticleNoun').textContent=result.question.article+' '+result.question.noun;
+    $('germanArticleFeedback').textContent=result.ok?'✓ Richtig!':('✕ Richtig ist: '+result.question.article+' '+result.question.noun+'. Die Paarung bleibt richtig, die Wiederholung zählt nicht als Erfolg.');
+    $('germanArticleFeedback').classList.toggle('article-wrong',!result.ok);
+    document.querySelectorAll('[data-german-article]').forEach(button=>button.classList.toggle('article-right',button.dataset.germanArticle===result.question.article));
+    $('germanArticleContinue').hidden=false;render();$('germanArticleContinue').focus();
+  });
+}
+function continueGermanArticle(){
+  const q=articleQuestion;if(!q?.answered||q.complete==null)return;
+  if(!q.complete){openGermanArticle(q.wordId,q.round);return;}
+  articleQuestion=null;$('germanArticleDialog').close();
+  if(!q.round){showMatchingRound(true);return;}
+  const round=q.round;if(current!==round)return;
+  const word=book().words.find(w=>w.id===q.wordId);round.solved.add(q.wordId);round.leftId=round.rightId=null;round.busy=false;session[q.credited?'good':'bad']++;
+  for(const side of ['left','right'])for(const button of $(side==='left'?'matchingLeft':'matchingRight').children){button.setAttribute('aria-pressed','false');if(button.dataset.wordId===q.wordId){button.textContent=matchingText(word,language,side,true);button.disabled=true;button.classList.add('matched');button.classList.toggle('article-mistake',!q.credited);}}
+  $('matchingFeedback').textContent=(q.credited?'✓ ':'Artikel noch üben · ')+word.term+' — '+word.de;
+  $('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;
+  if(round.solved.size===round.words.length){$('matchingNext').hidden=false;$('matchingFeedback').textContent+=' · Alle Paare zugeordnet.';}
+}
+document.querySelectorAll('[data-german-article]').forEach(button=>button.onclick=()=>chooseGermanArticle(button.dataset.germanArticle));
+$('germanArticleContinue').onclick=continueGermanArticle;
+$('germanArticleDialog').addEventListener('cancel',event=>{event.preventDefault();if(articleQuestion?.answered)continueGermanArticle();});
 function showNext(scroll=false){
   if(!canWrite())return;
   if(mode==='cards'){showMatchingRound(scroll);return;}
@@ -215,7 +262,7 @@ function download(value,filename,type='application/json'){
 async function readJSON(file){if(!file)throw Error('Bitte eine Datei auswählen.');if(file.size>10*1024*1024)throw Error('Die Datei ist größer als 10 MB.');return JSON.parse(await file.text());}
 function buildReport(){
   return {title:'Wort für Wort · Lernübersicht',generatedAt:new Date().toISOString(),demo,languages:Object.fromEntries(LANGUAGES.map(lang=>{
-    const b=state.languages[lang];return [lang,{language:names[lang],summary:summarize(b),last7Days:activity(b),lessons:b.lessons.map(l=>{const subset={...b,words:b.words.filter(w=>w.lessonIds.includes(l.id))};return {name:l.name,...summarize(subset)};}),wordsWithMistakes:b.words.filter(w=>!b.hidden.includes(w.id)).filter(w=>{const s=wordStats(b,w.id);return s.wrong||s.recallWrong||s.contextWrong;}).map(w=>({term:w.term,de:w.de,stats:wordStats(b,w.id)}))}];}))};
+    const b=state.languages[lang];return [lang,{language:names[lang],summary:summarize(b),last7Days:activity(b),lessons:b.lessons.map(l=>{const subset={...b,words:b.words.filter(w=>w.lessonIds.includes(l.id))};return {name:l.name,...summarize(subset)};}),wordsWithMistakes:b.words.filter(w=>!b.hidden.includes(w.id)).filter(w=>{const s=wordStats(b,w.id);return s.wrong||s.recallWrong||s.contextWrong||s.articleWrong;}).map(w=>({term:w.term,de:w.de,stats:wordStats(b,w.id)}))}];}))};
 }
 function openReport(){
   const report=buildReport();$('reportContent').replaceChildren(...LANGUAGES.map(lang=>{
@@ -227,8 +274,8 @@ function openReport(){
 }
 function openProgress(view){
   const titles={once:'1 von 3 Karten richtig',twice:'2 von 3 Karten richtig',mistakes:'Wörter mit Fehlern'};const b=book();$('progressTitle').textContent=titles[view];
-  const words=b.words.filter(w=>{if(b.hidden.includes(w.id))return false;const s=wordStats(b,w.id);return view==='once'?!s.mastered&&s.streak===1:view==='twice'?!s.mastered&&s.streak===2:s.wrong||s.recallWrong||s.contextWrong;});
-  $('progressWords').replaceChildren(...words.map(w=>{const s=wordStats(b,w.id);return node('p',w.term+' · '+w.de+'\nKarten: '+s.correct+' / '+s.wrong+' · Erinnern: '+s.recallCorrect+' / '+s.recallWrong+' · Kontext: '+s.contextCorrect+' / '+s.contextWrong);}));if(!words.length)$('progressWords').append(node('p','Hier gibt es noch keine Wörter.'));$('progressDialog').showModal();
+  const words=b.words.filter(w=>{if(b.hidden.includes(w.id))return false;const s=wordStats(b,w.id);return view==='once'?!s.mastered&&s.streak===1:view==='twice'?!s.mastered&&s.streak===2:s.wrong||s.recallWrong||s.contextWrong||s.articleWrong;});
+  $('progressWords').replaceChildren(...words.map(w=>{const s=wordStats(b,w.id);return node('p',w.term+' · '+w.de+'\nKarten: '+s.correct+' / '+s.wrong+' · Erinnern: '+s.recallCorrect+' / '+s.recallWrong+' · Kontext: '+s.contextCorrect+' / '+s.contextWrong+' · Artikel: '+(s.articleCorrect||0)+' / '+(s.articleWrong||0));}));if(!words.length)$('progressWords').append(node('p','Hier gibt es noch keine Wörter.'));$('progressDialog').showModal();
 }
 function toggleDemo(){
   if(cloud.enabled){notice('Die getrennte Demo ist in der Cloud-Version deaktiviert.');return;}

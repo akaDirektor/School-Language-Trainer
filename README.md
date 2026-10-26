@@ -4,7 +4,7 @@ A small, dependency-free school vocabulary trainer for iPhone, tablet and comput
 
 ## Learning
 
-- **Matching cards:** match up to five target-language cards with five shuffled German cards. Correct pairs reveal the complete dictionary entries including articles. Three consecutive correct matches are a progress milestone, never an access gate.
+- **Matching cards:** match up to five target-language cards with five shuffled German cards. After a correct pair, a modal asks for der/die/das for each German noun translation. Only correct articles advance the successful matching streak; article errors have separate counters. The complete entries are revealed after acknowledgement. Pending article questions survive reloads. Three consecutive correct matches are a progress milestone, never an access gate.
 - **Active recall:** choose English → German or German → English, translate mentally, reveal and self-assess. Both directions keep their own cycles and counters, in addition to the historical combined totals.
 - **Context (available immediately):** type the exact missing form in a textbook or clearly labelled supplemental AI sentence. Articles and accents in the answer are required. Textbook sentences take priority. No live AI or translation service is called.
 - Named lessons/topics, multiple lessons per word, combined lesson filters, word-type/date/mastery filters, search, editing, hiding and restoring words.

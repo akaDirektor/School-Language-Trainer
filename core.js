@@ -2,7 +2,7 @@ export const LANGUAGES = ['en', 'es'];
 export const STORAGE_KEY = 'school-language-trainer:state:v1';
 export const FORMAT = 'school-language-trainer-backup-v1';
 const TYPES = ['noun', 'verb', 'adjective', 'adverb', 'phrase', 'other'];
-const counters = ['correct','wrong','streak','recallCorrect','recallWrong','recallForwardCorrect','recallForwardWrong','recallReverseCorrect','recallReverseWrong','contextCorrect','contextWrong','contextStreak'];
+const counters = ['correct','wrong','streak','recallCorrect','recallWrong','recallForwardCorrect','recallForwardWrong','recallReverseCorrect','recallReverseWrong','articleCorrect','articleWrong','contextCorrect','contextWrong','contextStreak'];
 export const clone = value => structuredClone(value);
 export const normalize = value => value.normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 export const dayKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -66,7 +66,8 @@ export function validateState(raw) {
     for(const [key, value] of Object.entries(input.stats)) {
       id(key); if(!ids.has(key) || !value || typeof value !== 'object') throw Error('Lernstand ohne Wort.');
       const st = {};
-      for(const name of counters) { if(/^recall(Forward|Reverse)/.test(name)&&value[name]==null)continue;const n = value[name] ?? 0; if(!Number.isSafeInteger(n) || n < 0) throw Error('Ungültiger Zähler.'); st[name] = n; }
+      for(const name of counters) { if((/^recall(Forward|Reverse)/.test(name)||/^article/.test(name))&&value[name]==null)continue;const n = value[name] ?? 0; if(!Number.isSafeInteger(n) || n < 0) throw Error('Ungültiger Zähler.'); st[name] = n; }
+      if(value.pendingArticle!=null){const p=value.pendingArticle,w=target.words.find(w=>w.id===key);if(!p||typeof p.scope!=='string'||p.scope.length>1000||!Number.isSafeInteger(p.index)||p.index<0||p.index>=germanArticles(w).length||typeof p.hadError!=='boolean')throw Error('Ungültige offene Artikelfrage.');st.pendingArticle={scope:p.scope,index:p.index,hadError:p.hadError};}
       if(typeof value.mastered !== 'boolean') throw Error('Ungültiger Lernstatus.'); st.mastered = value.mastered;
       if(!Array.isArray(value.workedDays) || value.workedDays.length > 366 || value.workedDays.some(d => !validDay(d))) throw Error('Ungültiger Tagesverlauf.');
       st.workedDays = [...new Set(value.workedDays)].sort(); target.stats[key] = st;
@@ -102,7 +103,7 @@ export function eligibleWords(book,{mode='cards',lessonIds=[],focus='unmastered'
     if(period !== 'all' && !(age >= 0 && age < Number(period))) return false;
     if(mode !== 'cards') return mode !== 'context' || w.examples.length > 0;
     if(focus === 'unmastered' && st.mastered) return false;
-    if(focus === 'weak' && !(st.wrong || st.recallWrong || st.contextWrong)) return false;
+    if(focus === 'weak' && !(st.wrong || st.recallWrong || st.contextWrong || st.articleWrong)) return false;
     return true;
   });
 }
@@ -126,7 +127,7 @@ export function summarize(book,day=dayKey()) {
     if(!st.mastered && st.streak === 1)result.once++; if(!st.mastered && st.streak === 2)result.twice++;
     if(st.recallCorrect >= 3)result.activeKnown++;
     if(w.examples.length)result.contextReady++;
-    if(st.wrong || st.recallWrong || st.contextWrong)result.mistakes++;
+    if(st.wrong || st.recallWrong || st.contextWrong || st.articleWrong)result.mistakes++;
     for(const field of ['correct','wrong','recallCorrect','recallWrong','contextCorrect','contextWrong']) result[field]+=st[field];
   }
   return result;
@@ -136,7 +137,27 @@ export function activity(book,day=dayKey()) {
 }
 export function promptTerm(word,lang) { return lang === 'es' && word.type === 'noun' ? word.term.replace(/^(el|la|los|las)\s+/i,'') : word.term; }
 export function recallPrompt(word,language,direction='forward'){return direction==='reverse'?{text:word.de,language:'de'}:{text:word.term,language};}
-export function matchingText(word,language,side,solved=false){if(side==='left')return solved?word.term:promptTerm(word,language);return solved||word.type!=='noun'?word.de:word.de.replace(/\b(der|die|das)\s+/gi,'');}
+export function matchingText(word,language,side,solved=false){if(side==='left')return solved?word.term:promptTerm(word,language);return solved?word.de:word.de.replace(/\b(der|die|das)\s+/gi,'');}
+export function germanArticles(word){
+  if(!word)return [];
+  return word.de.split(/;|\s+\/\s+/).map(value=>/^(der|die|das)\s+(.+)$/i.exec(value.trim())).filter(Boolean).map(match=>({article:match[1].toLowerCase(),noun:match[2]}));
+}
+export function beginArticleMatch(state,language,wordId,scope,day=dayKey()){
+  const book=state.languages[language],w=book?.words.find(w=>w.id===wordId);if(!w||book.hidden.includes(wordId)||!germanArticles(w).length||typeof scope!=='string'||scope.length>1000||!validDay(day))throw Error('Ungültige Artikelfrage.');
+  const next=clone(state),b=next.languages[language],st=wordStats(b,wordId);
+  if(!st.pendingArticle){st.correct++;st.workedDays=[...new Set([...st.workedDays,day])].sort().slice(-366);st.pendingArticle={scope,index:0,hadError:false};b.stats[wordId]=st;}
+  return next;
+}
+export function answerGermanArticle(state,language,wordId,article,day=dayKey()){
+  const next=clone(state),b=next.languages[language],w=b?.words.find(w=>w.id===wordId),st=b?.stats[wordId],pending=st?.pendingArticle;
+  if(!w||b.hidden.includes(wordId)||!pending||!['der','die','das'].includes(article)||!validDay(day))throw Error('Keine offene Artikelfrage.');
+  const q=germanArticles(w)[pending.index],ok=q.article===article;
+  const field=ok?'articleCorrect':'articleWrong';st[field]=(st[field]||0)+1;st.workedDays=[...new Set([...st.workedDays,day])].sort().slice(-366);
+  if(!ok){pending.hadError=true;st.streak=0;st.mastered=false;}
+  pending.index++;const complete=pending.index===germanArticles(w).length,credited=complete&&!pending.hadError;
+  if(complete){if(credited){st.streak++;st.mastered=st.streak>=3;}b.cycles[pending.scope]=[...new Set([...(b.cycles[pending.scope]||[]),wordId])];delete st.pendingArticle;}
+  return {state:next,ok,complete,credited,question:q};
+}
 export function shuffled(items,random=Math.random){const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;}
 export function matchingRound(book,options,language,random=Math.random){
   const pool=eligibleWords(book,{...options,mode:'cards'}),scope=scopeKey({...options,mode:'cards'});let seen=book.cycles[scope]||[],available=pool.filter(w=>!seen.includes(w.id));
