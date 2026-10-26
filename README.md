@@ -4,13 +4,13 @@ A small, dependency-free school vocabulary trainer for iPhone, tablet and comput
 
 ## Learning
 
-- **Word cards:** think of the translation, reveal both complete dictionary forms (including articles), then mark known / practise again. Three consecutive correct cards unlock the next stages.
-- **Active recall:** translate mentally, reveal and self-assess. Prioritises weaker words.
-- **Context:** type the exact missing form in a textbook or clearly labelled supplemental AI sentence. Articles and accents in the answer are required. Textbook sentences take priority. No live AI or translation service is called.
+- **Matching cards:** match up to five target-language cards with five shuffled German cards. Correct pairs reveal the complete dictionary entries including articles. Three consecutive correct matches are a progress milestone, never an access gate.
+- **Active recall:** choose English → German or German → English, translate mentally, reveal and self-assess. Both directions keep their own cycles and counters, in addition to the historical combined totals.
+- **Context (available immediately):** type the exact missing form in a textbook or clearly labelled supplemental AI sentence. Articles and accents in the answer are required. Textbook sentences take priority. No live AI or translation service is called.
 - Named lessons/topics, multiple lessons per word, combined lesson filters, word-type/date/mastery filters, search, editing, hiding and restoring words.
 - Separate per-language counters, matching streaks, ready words, recall success, context success, accuracy, mistakes, seven-day activity, and a combined parent summary.
 
-The canonical dictionaries in `data/en.json` and `data/es.json` deliberately start empty. Add only reviewed textbook vocabulary. The optional demo uses separate in-memory data and never writes into real dictionaries.
+All three exercises are independent and available immediately. The English corpus currently contains 35 reviewed blue headword records in Station 2 (29) and Station 3 (6); Spanish remains empty. Add only reviewed textbook vocabulary. The optional demo uses separate in-memory data and never writes into real dictionaries.
 
 ## Start locally
 

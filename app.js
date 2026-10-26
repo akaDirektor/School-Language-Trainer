@@ -1,4 +1,4 @@
-import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage} from './core.js';
+import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,recallPrompt,matchingRound,matchingText} from './core.js';
 import {demoState} from './demo.js';
 import {cloudConfig} from './cloud-config.js';
 import {createCloud} from './cloud.js';
@@ -17,7 +17,7 @@ const book=()=>state.languages[language];
 const node=(tag,text,className)=>{const element=document.createElement(tag);if(text!=null)element.textContent=text;if(className)element.className=className;return element;};
 const uid=prefix=>prefix+'-'+crypto.randomUUID();
 function notice(message,error=false){$('notice').textContent=message;$('notice').classList.toggle('error',error);$('notice').hidden=!message;}
-function options(){return {mode,lessonIds:selectedLessons,focus:$('focus').value,type:$('type').value,period:$('period').value};}
+function options(){return {mode,lessonIds:selectedLessons,focus:$('focus').value,type:$('type').value,period:$('period').value,direction:$('recallDirection').value};}
 function storageFailure(message){storageOK=false;stopTraining();$('saveState').textContent='Speichern nicht möglich';notice(message+' Lade eine Sicherung herunter, bevor du diese Seite schließt.',true);render();}
 function commit(next){
   if(!canWrite()){notice('Bitte mit dem Schülerkonto anmelden, um Daten zu ändern.',true);return false;}
@@ -49,9 +49,10 @@ function render(){
   document.querySelectorAll('[data-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.mode===mode)));
   $('languageEyebrow').textContent=names[language].toUpperCase()+' LERNEN';$('todayMetric').textContent=s.today;$('todayTotal').textContent='/ '+s.total+' Wörter';
   $('readyMetric').textContent=s.ready;$('onceMetric').textContent=s.once;$('twiceMetric').textContent=s.twice;$('accuracyMetric').textContent=accuracy(s.correct,s.wrong);
-  const percent=s.total?Math.round(s.ready/s.total*100):0;$('masteryLabel').textContent=s.ready+' von '+s.total+' Wörtern bereit';$('masteryPercent').textContent=percent+'%';$('masteryBar').style.width=percent+'%';
+  const percent=s.total?Math.round(s.ready/s.total*100):0;$('masteryLabel').textContent=s.ready+' von '+s.total+' Wörtern 3-mal zugeordnet';$('masteryPercent').textContent=percent+'%';$('masteryBar').style.width=percent+'%';
   $('wordCount').textContent=s.total+' Wörter';$('demoBanner').hidden=!demo;$('demoToggle').textContent=demo?'Demo beenden ↗':'Demo ausprobieren ↗';
-  const fields=[['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Bereit für Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
+  const directional=field=>b.words.filter(w=>!b.hidden.includes(w.id)).reduce((sum,w)=>sum+(wordStats(b,w.id)[field]||0),0);
+  const fields=[['Erinnern · '+names[language]+' → DE',directional('recallForwardCorrect')+' / '+directional('recallForwardWrong')],['Erinnern · DE → '+names[language],directional('recallReverseCorrect')+' / '+directional('recallReverseWrong')],['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Wörter mit Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
   $('allMetrics').replaceChildren(...fields.map(([label,value])=>{const el=node('div',label);el.append(node('b',value));return el;}));
   renderActivity();renderLessons();renderDictionary();updateMode();
   document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary,#resetLanguage').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
@@ -80,12 +81,13 @@ function renderLessons(){
   $('lessonStatus').textContent=base.length+' Wörter in deiner Auswahl · '+unmastered.length+' noch nicht gelernt'+(book().lessons.length?' · mehrere Lektionen kombinierbar':' · Lektionen kannst du frei benennen');
 }
 function updateMode(){
-  const s=summarize(book());$('focus').disabled=mode!=='cards';
-  $('modeHelp').textContent=mode==='cards'?'Dreimal hintereinander richtig? Dann bist du bereit zum Erinnern.':mode==='recall'?'Erst im Kopf übersetzen, dann die vollständige Lösung vergleichen.':'Setze das gelernte Wort in der passenden Form ein. Artikel und Akzente zählen mit.';
+  $('focus').disabled=mode!=='cards';$('recallDirectionTools').hidden=mode!=='recall';
+  const direction=$('recallDirection'),reverse=direction.value==='reverse';
+  direction.options[0].textContent=names[language]+' → Deutsch';direction.options[1].textContent='Deutsch → '+names[language];
+  $('modeHelp').textContent=mode==='cards'?'Wähle ein Wort und die passende deutsche Karte. Alle Übungen sind unabhängig verfügbar.':mode==='recall'?'Erst im Kopf übersetzen, dann vergleichen. Richtung: '+(reverse?'Deutsch → '+names[language]:names[language]+' → Deutsch')+'.':'Setze das Wort in der passenden Form ein. Du kannst diese Übung sofort starten.';
   const count=eligibleWords(book(),options()).length;$('startTraining').textContent=count?'Training starten · '+count+' →':'Training starten →';
-  if(mode!=='cards')$('modeHelp').textContent+=' '+(mode==='context'?s.contextReady:s.ready)+' Wörter sind insgesamt bereit.';
 }
-function progressLabel(w,b=book()) {const st=wordStats(b,w.id);return st.mastered?'Bereit zum Erinnern':st.streak?Math.min(st.streak,3)+' von 3 Karten':'Noch nicht gelernt';}
+function progressLabel(w,b=book()) {const st=wordStats(b,w.id);return st.mastered?'3-mal richtig zugeordnet':st.streak?Math.min(st.streak,3)+' von 3 Karten':'Noch nicht gelernt';}
 function renderDictionary(){
   const query=normalize($('search').value),b=book();
   const words=b.words.filter(w=>(!b.hidden.includes(w.id)||$('showHidden').checked)&&(!query||normalize(w.term+' '+w.de).includes(query)));
@@ -102,15 +104,63 @@ function renderDictionary(){
 }
 async function toggleHidden(id){await mutate(()=>{const next=clone(state),b=next.languages[language];b.hidden=b.hidden.includes(id)?b.hidden.filter(k=>k!==id):[...b.hidden,id];if(commit(next)){stopTraining();render();}});}
 function startTraining(){session={good:0,bad:0};showNext(true);}
+function showMatchingRound(scroll=false){
+  const round=matchingRound(book(),options(),language);
+  if(!round.words.length){stopTraining();notice('Keine Wörter für diese Auswahl. Wähle andere Filter oder „Alle, auch gelernte Wörter“.');return;}
+  notice('');current={...round,mode:'cards',language,solved:new Set(),leftId:null,rightId:null,busy:false};
+  $('training').hidden=false;$('matchingBoard').hidden=false;$('wordCard').hidden=true;$('hideTrainingWord').hidden=true;
+  $('judgeButtons').hidden=true;$('contextNext').hidden=true;$('matchingNext').hidden=true;
+  $('trainingMode').textContent='PAARE FINDEN';$('trainingTitle').textContent='Welche Karten gehören zusammen?';
+  $('trainingStatus').textContent=round.words.length+' Paare · '+eligibleWords(book(),options()).length+' Wörter in dieser Auswahl';
+  $('matchingLeftLabel').textContent=names[language];$('matchingFeedback').textContent='Wähle ein Wort und die passende deutsche Übersetzung.';
+  const activeRound=current;
+  for(const side of ['left','right']){
+    const column=$(side==='left'?'matchingLeft':'matchingRight');column.replaceChildren(...round[side].map(w=>{
+      const button=node('button',matchingText(w,language,side),'pair-card');button.type='button';button.lang=side==='left'?language:'de';button.dataset.wordId=w.id;button.setAttribute('aria-pressed','false');button.onclick=()=>selectMatching(side,w.id,activeRound);return button;
+    }));
+  }
+  $('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;
+  if(scroll){$('training').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});$('trainingTitle').focus({preventScroll:true});}
+}
+async function selectMatching(side,id,round){
+  if(!round||current!==round||round.mode!=='cards'||round.busy||round.solved.has(id)||!canWrite())return;
+  round[side==='left'?'leftId':'rightId']=id;
+  for(const columnSide of ['left','right'])for(const button of $(columnSide==='left'?'matchingLeft':'matchingRight').children)button.setAttribute('aria-pressed',String(button.dataset.wordId===round[columnSide==='left'?'leftId':'rightId']));
+  if(!round.leftId||!round.rightId)return;
+  round.busy=true;const leftId=round.leftId,rightId=round.rightId,ok=leftId===rightId;
+  await mutate(()=>{
+    if(current!==round)return;
+    const next=recordAnswer(state,round.language,leftId,'cards',ok);
+    if(ok)next.languages[round.language].cycles[round.scope]=[...new Set([...round.seen,...round.solved,leftId])];
+    if(!commit(next))return;
+    session[ok?'good':'bad']++;const w=book().words.find(w=>w.id===leftId);
+    if(ok)round.solved.add(leftId);
+    $('matchingFeedback').textContent=ok?'✓ '+w.term+' — '+w.de:'✕ Diese Karten passen nicht zusammen. Versuche es noch einmal.';
+    for(const columnSide of ['left','right']){
+      for(const button of $(columnSide==='left'?'matchingLeft':'matchingRight').children){
+        button.setAttribute('aria-pressed','false');
+        if(ok&&button.dataset.wordId===leftId){button.textContent=matchingText(w,language,columnSide,true);button.classList.add('matched');button.disabled=true;}
+      }
+    }
+    round.leftId=round.rightId=null;render();
+    $('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;
+    if(round.solved.size===round.words.length){$('matchingNext').hidden=false;$('matchingFeedback').textContent+=' · Alle Paare gefunden!';}
+  });
+  if(current===round)round.busy=false;
+}
+$('matchingNext').onclick=()=>{if(current?.mode==='cards'&&current.solved.size===current.words.length)showMatchingRound();};
 function showNext(scroll=false){
   if(!canWrite())return;
+  if(mode==='cards'){showMatchingRound(scroll);return;}
   const choice=nextWord(book(),options());
-  if(!choice.word){stopTraining();notice(mode==='cards'?'Für diese Auswahl gibt es keine offenen Wörter. Füge Wörter hinzu oder wähle einen anderen Lernstand.':mode==='recall'?'Hier ist noch kein Wort bereit. Übe es zuerst dreimal hintereinander mit den Wortkarten.':'Hier ist noch kein Satz bereit. Du brauchst gelernte Wörter mit einem Beispielsatz.');return;}
+  if(!choice.word){stopTraining();notice(mode==='cards'?'Für diese Auswahl gibt es keine offenen Wörter. Füge Wörter hinzu oder wähle einen anderen Lernstand.':mode==='recall'?'Für diese Auswahl gibt es keine Wörter. Bitte andere Lektionen oder Filter wählen.':'Für diese Auswahl gibt es keine Beispielsätze. Bitte andere Lektionen wählen oder einen Satz ergänzen.');return;}
   notice('');const w=choice.word,examples=[...w.examples].sort((a,b)=>(a.source==='textbook'?0:1)-(b.source==='textbook'?0:1));
-  current={id:w.id,language,mode,scope:choice.scope,seen:choice.seen,revealed:false,answered:false,example:examples.length?examples[(wordStats(book(),w.id).contextCorrect+wordStats(book(),w.id).contextWrong)%examples.filter(e=>e.source===examples[0].source).length]:null};
+  current={id:w.id,language,mode,direction:$('recallDirection').value,scope:choice.scope,seen:choice.seen,revealed:false,answered:false,example:examples.length?examples[(wordStats(book(),w.id).contextCorrect+wordStats(book(),w.id).contextWrong)%examples.filter(e=>e.source===examples[0].source).length]:null};
+  $('matchingBoard').hidden=true;$('wordCard').hidden=false;$('hideTrainingWord').hidden=false;
   $('training').hidden=false;$('trainingMode').textContent={cards:'WORTKARTEN',recall:'AKTIV ERINNERN',context:'WÖRTER IM SATZ'}[mode];$('trainingTitle').textContent=mode==='context'?'Welches Wort fehlt?':mode==='recall'?'Weißt du die Übersetzung?':'Deine nächste Karte';
   $('trainingStatus').textContent=progressLabel(w)+' · '+eligibleWords(book(),options()).length+' Wörter in dieser Auswahl';$('wordLesson').textContent=w.lessonIds.map(id=>book().lessons.find(l=>l.id===id)?.name).filter(Boolean).join(' · ')||'Ohne Lektion';
-  $('promptLabel').textContent=names[language];$('wordPrompt').lang=language;$('wordPrompt').classList.toggle('context-prompt',mode==='context');$('wordPrompt').textContent=mode==='context'?current.example.sentence.replace('{{word}}','_______'):promptTerm(w,language);
+  const prompt=recallPrompt(w,language,current.direction);
+  $('promptLabel').textContent=mode==='recall'?(current.direction==='reverse'?'Deutsch → '+names[language]:names[language]+' → Deutsch'):names[language];$('wordPrompt').lang=mode==='recall'?prompt.language:language;$('wordPrompt').classList.toggle('context-prompt',mode==='context');$('wordPrompt').textContent=mode==='context'?current.example.sentence.replace('{{word}}','_______'):prompt.text;
   $('contextForm').hidden=mode!=='context';$('contextInput').value='';$('contextInput').disabled=false;$('contextInput').lang=language;$('checkContext').disabled=false;
   $('revealAnswer').hidden=mode==='context';$('answerArea').hidden=true;$('judgeButtons').hidden=true;$('contextNext').hidden=true;$('exampleArea').hidden=true;$('answerFeedback').textContent='';$('answerFeedback').className='answer-feedback';
   $('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;
@@ -130,7 +180,7 @@ async function answer(ok){
   await mutate(()=>{
     if(current!==question)return;
     try{
-      const next=recordAnswer(state,question.language,question.id,question.mode,ok);next.languages[question.language].cycles[question.scope]=[...new Set([...question.seen,question.id])];
+      const next=recordAnswer(state,question.language,question.id,question.mode,ok,dayKey(),question.direction);next.languages[question.language].cycles[question.scope]=[...new Set([...question.seen,question.id])];
       if(commit(next)){session[ok?'good':'bad']++;render();if(question.mode!=='context')showNext();else{$('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;}}
     }catch(error){notice(error.message,true);}
   });$('answerCorrect').disabled=$('answerWrong').disabled=false;
@@ -170,7 +220,7 @@ function buildReport(){
 function openReport(){
   const report=buildReport();$('reportContent').replaceChildren(...LANGUAGES.map(lang=>{
     const r=report.languages[lang],s=r.summary,section=node('section',null,'report-language');section.append(node('h3',r.language));
-    const values=node('div',null,'report-values');for(const [label,value]of [['Heute geübt',s.today+' / '+s.total],['Bereit zum Erinnern',s.ready],['Aktiv erinnert · 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong]]){const v=node('div',label);v.append(node('b',value));values.append(v);}section.append(values);
+    const values=node('div',null,'report-values');for(const [label,value]of [['Heute geübt',s.today+' / '+s.total],['3-mal richtig zugeordnet',s.ready],['Aktiv erinnert · 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong]]){const v=node('div',label);v.append(node('b',value));values.append(v);}section.append(values);
     const table=node('table',null,'report-table'),head=node('thead'),hr=node('tr');for(const label of ['Lektion','Wörter','Bereit','Heute']){const th=node('th',label);th.scope='col';hr.append(th);}head.append(hr);table.append(head);const body=node('tbody');for(const l of r.lessons){const row=node('tr');for(const value of [l.name,l.total,l.ready,l.today])row.append(node('td',value));body.append(row);}table.append(body);if(r.lessons.length)section.append(table);
     const mistakes=node('p',r.wordsWithMistakes.length?'Zum Wiederholen: '+r.wordsWithMistakes.slice(0,20).map(w=>w.term).join(', '):'Noch keine Wörter mit Fehlern.','fine-print');section.append(mistakes);return section;
   }));$('reportDialog').showModal();
@@ -184,14 +234,14 @@ function toggleDemo(){
   if(cloud.enabled){notice('Die getrennte Demo ist in der Cloud-Version deaktiviert.');return;}
   stopTraining();notice('');
   if(!demo){realState=state;state=demoState();demo=true;}else{state=realState;realState=null;demo=false;}
-  selectedLessons=[];lessonMemory.en=[];lessonMemory.es=[];mode='cards';$('focus').value='unmastered';$('search').value='';backupCandidate=vocabCandidate=null;$('restoreBackup').disabled=$('importVocabulary').disabled=true;$('backupPreview').textContent=$('vocabularyPreview').textContent='';
+  selectedLessons=[];lessonMemory.en=[];lessonMemory.es=[];mode='cards';$('focus').value='all';$('search').value='';backupCandidate=vocabCandidate=null;$('restoreBackup').disabled=$('importVocabulary').disabled=true;$('backupPreview').textContent=$('vocabularyPreview').textContent='';
   $('saveState').textContent=demo?'Demo · nicht gespeichert':'Lokal gespeichert';render();
 }
 document.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>$(button.dataset.close).close());
 document.querySelectorAll('[data-language]').forEach(button=>button.onclick=()=>{if(language===button.dataset.language)return;stopTraining();language=button.dataset.language;selectedLessons=[...lessonMemory[language]];$('search').value='';shownWords=30;render();});
 document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{mode=button.dataset.mode;stopTraining();render();});
 document.querySelectorAll('[data-progress]').forEach(button=>button.onclick=()=>openProgress(button.dataset.progress));
-for(const id of ['focus','type','period'])$(id).onchange=()=>{stopTraining();render();};
+for(const id of ['focus','type','period','recallDirection'])$(id).onchange=()=>{stopTraining();render();};
 $('search').oninput=()=>{shownWords=30;renderDictionary();};$('showHidden').onchange=renderDictionary;$('showMore').onclick=()=>{shownWords+=30;renderDictionary();};
 $('startTraining').onclick=startTraining;$('stopTraining').onclick=stopTraining;$('revealAnswer').onclick=reveal;$('answerCorrect').onclick=()=>answer(true);$('answerWrong').onclick=()=>answer(false);$('checkContext').onclick=submitContext;$('contextNext').onclick=()=>showNext();
 $('contextInput').oninput=()=>{$('contextInput').setCustomValidity('');};$('contextInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submitContext();}};

@@ -2,7 +2,7 @@ export const LANGUAGES = ['en', 'es'];
 export const STORAGE_KEY = 'school-language-trainer:state:v1';
 export const FORMAT = 'school-language-trainer-backup-v1';
 const TYPES = ['noun', 'verb', 'adjective', 'adverb', 'phrase', 'other'];
-const counters = ['correct','wrong','streak','recallCorrect','recallWrong','contextCorrect','contextWrong','contextStreak'];
+const counters = ['correct','wrong','streak','recallCorrect','recallWrong','recallForwardCorrect','recallForwardWrong','recallReverseCorrect','recallReverseWrong','contextCorrect','contextWrong','contextStreak'];
 export const clone = value => structuredClone(value);
 export const normalize = value => value.normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase();
 export const dayKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
@@ -66,7 +66,7 @@ export function validateState(raw) {
     for(const [key, value] of Object.entries(input.stats)) {
       id(key); if(!ids.has(key) || !value || typeof value !== 'object') throw Error('Lernstand ohne Wort.');
       const st = {};
-      for(const name of counters) { const n = value[name] ?? 0; if(!Number.isSafeInteger(n) || n < 0) throw Error('Ungültiger Zähler.'); st[name] = n; }
+      for(const name of counters) { if(/^recall(Forward|Reverse)/.test(name)&&value[name]==null)continue;const n = value[name] ?? 0; if(!Number.isSafeInteger(n) || n < 0) throw Error('Ungültiger Zähler.'); st[name] = n; }
       if(typeof value.mastered !== 'boolean') throw Error('Ungültiger Lernstatus.'); st.mastered = value.mastered;
       if(!Array.isArray(value.workedDays) || value.workedDays.length > 366 || value.workedDays.some(d => !validDay(d))) throw Error('Ungültiger Tagesverlauf.');
       st.workedDays = [...new Set(value.workedDays)].sort(); target.stats[key] = st;
@@ -84,13 +84,12 @@ export function validateState(raw) {
 export function wordStats(book, wordId) {
   return book.stats[wordId] || {correct:0,wrong:0,streak:0,mastered:false,recallCorrect:0,recallWrong:0,contextCorrect:0,contextWrong:0,contextStreak:0,workedDays:[]};
 }
-export function recordAnswer(state,lang,wordId,mode,ok,day = dayKey()) {
+export function recordAnswer(state,lang,wordId,mode,ok,day = dayKey(),direction='forward') {
   const next = clone(state), book = next.languages[lang];
   if(!book || !book.words.some(w => w.id === wordId) || book.hidden.includes(wordId) || !validDay(day) || typeof ok !== 'boolean' || !['cards','recall','context'].includes(mode)) throw Error('Ungültige Antwort.');
   const st = wordStats(book,wordId);
-  if(mode !== 'cards' && !st.mastered) throw Error('Zuerst drei Karten richtig lösen.');
   if(mode === 'cards') { st[ok?'correct':'wrong']++; st.streak = ok ? st.streak+1 : 0; st.mastered = st.streak >= 3; }
-  if(mode === 'recall') st[ok?'recallCorrect':'recallWrong']++;
+  if(mode === 'recall') {if(!['forward','reverse'].includes(direction))throw Error('Ungültige Richtung.');st[ok?'recallCorrect':'recallWrong']++;const field='recall'+(direction==='reverse'?'Reverse':'Forward')+(ok?'Correct':'Wrong');st[field]=(st[field]||0)+1;}
   if(mode === 'context') { st[ok?'contextCorrect':'contextWrong']++; st.contextStreak = ok ? st.contextStreak+1 : 0; }
   st.workedDays = [...new Set([...st.workedDays,day])].sort().slice(-366); book.stats[wordId] = st;
   return next;
@@ -101,21 +100,22 @@ export function eligibleWords(book,{mode='cards',lessonIds=[],focus='unmastered'
     if(book.hidden.includes(w.id) || (lessonIds.length && !w.lessonIds.some(l => lessonIds.includes(l))) || (type !== 'all' && w.type !== type)) return false;
     const age = (Date.parse(day+'T12:00:00Z')-Date.parse(w.addedAt+'T12:00:00Z'))/86400000;
     if(period !== 'all' && !(age >= 0 && age < Number(period))) return false;
-    if(mode !== 'cards') return st.mastered && (mode !== 'context' || w.examples.length > 0);
+    if(mode !== 'cards') return mode !== 'context' || w.examples.length > 0;
     if(focus === 'unmastered' && st.mastered) return false;
     if(focus === 'weak' && !(st.wrong || st.recallWrong || st.contextWrong)) return false;
     return true;
   });
 }
-export function scopeKey(options) { return [options.mode,options.focus,options.type,options.period,[...options.lessonIds].sort().join(',')].join('|'); }
+export function scopeKey(options) { const base=[options.mode,options.mode==='cards'?options.focus:'all',options.type,options.period,[...options.lessonIds].sort().join(',')].join('|');return options.mode==='recall'?base+'|direction:'+(options.direction||'forward'):base; }
 export function nextWord(book,options,random=Math.random) {
   const pool = eligibleWords(book,options), scope = scopeKey(options);
   if(!pool.length) return {word:null,scope,seen:[]};
   let seen = book.cycles[scope] || [], available = pool.filter(w => !seen.includes(w.id));
   if(!available.length) { seen = []; available = pool; }
   if(options.mode === 'recall') {
-    const min = Math.min(...available.map(w => wordStats(book,w.id).recallCorrect - wordStats(book,w.id).recallWrong));
-    available = available.filter(w => wordStats(book,w.id).recallCorrect-wordStats(book,w.id).recallWrong === min);
+    const prefix=options.direction==='reverse'?'recallReverse':'recallForward';
+    const score=w=>(wordStats(book,w.id)[prefix+'Correct']||0)-(wordStats(book,w.id)[prefix+'Wrong']||0);
+    const min = Math.min(...available.map(score));available=available.filter(w=>score(w)===min);
   }
   return {word:available[Math.min(available.length-1,Math.floor(random()*available.length))],scope,seen:[...seen]};
 }
@@ -125,7 +125,7 @@ export function summarize(book,day=dayKey()) {
     const st=wordStats(book,w.id); if(st.workedDays.includes(day))result.today++; if(st.mastered)result.ready++;
     if(!st.mastered && st.streak === 1)result.once++; if(!st.mastered && st.streak === 2)result.twice++;
     if(st.recallCorrect >= 3)result.activeKnown++;
-    if(st.mastered && w.examples.length)result.contextReady++;
+    if(w.examples.length)result.contextReady++;
     if(st.wrong || st.recallWrong || st.contextWrong)result.mistakes++;
     for(const field of ['correct','wrong','recallCorrect','recallWrong','contextCorrect','contextWrong']) result[field]+=st[field];
   }
@@ -135,6 +135,17 @@ export function activity(book,day=dayKey()) {
   return Array.from({length:7},(_,i)=>{const date=new Date(day+'T12:00:00');date.setDate(date.getDate()-6+i);const key=dayKey(date);const s=summarize(book,key);return {day:key,count:s.today,total:s.total};});
 }
 export function promptTerm(word,lang) { return lang === 'es' && word.type === 'noun' ? word.term.replace(/^(el|la|los|las)\s+/i,'') : word.term; }
+export function recallPrompt(word,language,direction='forward'){return direction==='reverse'?{text:word.de,language:'de'}:{text:word.term,language};}
+export function matchingText(word,language,side,solved=false){if(side==='left')return solved?word.term:promptTerm(word,language);return solved||word.type!=='noun'?word.de:word.de.replace(/\b(der|die|das)\s+/gi,'');}
+export function shuffled(items,random=Math.random){const result=[...items];for(let i=result.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}return result;}
+export function matchingRound(book,options,language,random=Math.random){
+  const pool=eligibleWords(book,{...options,mode:'cards'}),scope=scopeKey({...options,mode:'cards'});let seen=book.cycles[scope]||[],available=pool.filter(w=>!seen.includes(w.id));
+  if(!available.length){seen=[];available=pool;}
+  const leftLabels=new Set(),rightLabels=new Set(),words=[];
+  for(const word of shuffled(available,random)){const l=normalize(matchingText(word,language,'left')),r=normalize(matchingText(word,language,'right'));if(leftLabels.has(l)||rightLabels.has(r))continue;words.push(word);leftLabels.add(l);rightLabels.add(r);if(words.length===5)break;}
+  const left=shuffled(words,random),right=shuffled(words,random);if(right.length>1&&right.every((w,i)=>w.id===left[i].id))right.push(right.shift());
+  return {words,left,right,seen:[...seen],scope};
+}
 export function checkContext(input,example) { return [example.answer,...(example.acceptedAnswers||[])].some(answer=>normalize(input)===normalize(answer)); }
 export function mergeVocabulary(state,raw) {
   const incoming=validateVocabulary(raw), next=clone(state), book=next.languages[incoming.language];let added=0;
