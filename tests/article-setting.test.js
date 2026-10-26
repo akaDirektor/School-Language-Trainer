@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {emptyState,applyCatalog,germanArticlesRequired,shouldAskGermanArticle,checkRecall,gradeWritingPage,writingPage,backup,parseBackup,validateState,recordAnswer,beginArticleMatch,resetProgress} from '../core.js';
+import {emptyState,applyCatalog,germanArticlesRequired,shouldAskGermanArticle,checkRecall,gradeWritingPage,writingPage,backup,parseBackup,validateState,recordAnswer,beginArticleMatch,resetProgress,matchingText} from '../core.js';
 const source=JSON.parse(await readFile(new URL('../data/en.json',import.meta.url),'utf8'));
 const make=()=>applyCatalog(emptyState(),source).state;
 const id='en-s2-account';
@@ -27,4 +27,17 @@ test('worksheet grading follows the saved preference and still records writing s
 test('a new successful pairing without the article quiz clears an older pending question',()=>{
  let state=beginArticleMatch(make(),'en',id,'matching');state.preferences={requireGermanArticles:false};assert.ok(state.languages.en.stats[id].pendingArticle);
  state=recordAnswer(state,'en',id,'cards',true);assert.equal(state.languages.en.stats[id].pendingArticle,undefined);assert.equal(state.languages.en.stats[id].streak,1);assert.equal(state.languages.en.stats[id].articleCorrect||0,0);
+});
+
+test('matching cards show complete German articles when quizzes are off, in both language corpora',async()=>{
+ const spanish=JSON.parse(await readFile(new URL('../data/es.json',import.meta.url),'utf8'));
+ for(const corpus of [source,spanish]){
+  const state=applyCatalog(emptyState(),corpus).state;
+  for(const word of corpus.words.filter(w=>w.type==='noun')){
+   assert.equal(matchingText(word,corpus.language,'right',false,germanArticlesRequired(state)),word.de);
+   assert.equal(matchingText(word,corpus.language,'right',true,true),word.de);
+   assert.ok(!/^(der|die|das) /.test(matchingText(word,corpus.language,'right',false,true)));
+  }
+ }
+ const word=spanish.words.find(w=>w.id==='es-b1-a-fuegos-artificiales');assert.equal(matchingText(word,'es','right',false,false),'das Feuerwerk');
 });

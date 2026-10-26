@@ -130,7 +130,7 @@ function showMatchingRound(scroll=false){
   const activeRound=current;
   for(const side of ['left','right']){
     const column=$(side==='left'?'matchingLeft':'matchingRight');column.replaceChildren(...round[side].map(w=>{
-      const button=node('button',matchingText(w,language,side),'pair-card');button.type='button';button.lang=side==='left'?language:'de';button.dataset.wordId=w.id;button.setAttribute('aria-pressed','false');button.onclick=()=>selectMatching(side,w.id,activeRound);return button;
+      const button=node('button',matchingText(w,language,side,false,germanArticlesRequired(state)),'pair-card');button.type='button';button.lang=side==='left'?language:'de';button.dataset.wordId=w.id;button.setAttribute('aria-pressed','false');button.onclick=()=>selectMatching(side,w.id,activeRound);return button;
     }));
   }
   $('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;

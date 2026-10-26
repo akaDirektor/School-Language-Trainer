@@ -191,7 +191,7 @@ export function checkRecall(input,word,direction='forward',requireArticles=true)
   if(direction==='forward'&&!requireArticles)answers.push(...answers.map(a=>a.replace(/^(der|die|das)\s+/i,'')));
   return answers.includes(normalize(input));
 }
-export function matchingText(word,language,side,solved=false){if(side==='left')return solved?word.term:promptTerm(word,language);return solved?word.de:word.de.replace(/\b(der|die|das)\s+/gi,'');}
+export function matchingText(word,language,side,solved=false,requireArticles=true){if(side==='left')return solved?word.term:promptTerm(word,language);return solved||!requireArticles?word.de:word.de.replace(/\b(der|die|das)\s+/gi,'');}
 export function germanArticles(word){
   if(!word)return [];
   return word.de.split(/;|\s+\/\s+/).map(value=>/^(der|die|das)\s+(.+)$/i.exec(value.trim())).filter(Boolean).map(match=>({article:match[1].toLowerCase(),noun:match[2]}));
