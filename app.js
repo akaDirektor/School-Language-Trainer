@@ -1,4 +1,4 @@
-import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,recallPrompt,matchingRound,matchingText,germanArticles,beginArticleMatch,answerGermanArticle} from './core.js';
+import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,matchingRound,matchingText,germanArticles,beginArticleMatch,answerGermanArticle} from './core.js';
 import {demoState} from './demo.js';
 import {cloudConfig} from './cloud-config.js';
 import {createCloud} from './cloud.js';
@@ -56,8 +56,9 @@ function render(){
   const fields=[['Artikel · richtig / falsch',directional('articleCorrect')+' / '+directional('articleWrong')],['Artikel · Treffsicherheit',accuracy(directional('articleCorrect'),directional('articleWrong'))],['Erinnern · '+names[language]+' → DE',directional('recallForwardCorrect')+' / '+directional('recallForwardWrong')],['Erinnern · DE → '+names[language],directional('recallReverseCorrect')+' / '+directional('recallReverseWrong')],['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Wörter mit Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
   $('allMetrics').replaceChildren(...fields.map(([label,value])=>{const el=node('div',label);el.append(node('b',value));return el;}));
   renderActivity();renderLessons();renderDictionary();updateMode();
-  document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary,#resetLanguage').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
+  document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary,#resetLanguage,#resetProgress').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
   $('resetLanguage').textContent=names[language]+' · Wörter & Lernstand zurücksetzen';
+  $('resetProgress').textContent=names[language]+' · nur Lernfortschritt zurücksetzen';
   if(cloud.enabled){$('storageNoteText').textContent=parentView?'Elternansicht · Lernstand des Schülerkontos':cloudLocked?'Für geräteübergreifendes Lernen bitte anmelden':'Cloud-Synchronisation · derselbe Lernstand auf deinen Geräten';$('localCallout').hidden=true;}
   if(cloud.enabled){
     const connected=cloud.connected;
@@ -352,6 +353,15 @@ $('resetLanguage').onclick=async()=>{
   await mutate(()=>{
     download(backup(state),'school-vor-zuruecksetzen-'+Date.now()+'.json');
     if(commit(resetLanguage(state,selected))){stopTraining();selectedLessons=[];lessonMemory[selected]=[];seedSources=[];render();$('toolsDialog').close();notice(names[selected]+' wurde zurückgesetzt. Du kannst jetzt einen neuen Wortschatz importieren.');}
+  });
+};
+$('resetProgress').onclick=async()=>{
+  if(!canWrite())return;
+  const selected=language;
+  if(!confirm(names[selected]+': Alle Antworten, Treffer, Fehler, Artikel-Ergebnisse, Serien und die Tageshistorie dieser Sprache auf null setzen? Wörter, Lektionen und Beispiele bleiben erhalten. Zuvor wird eine Sicherung heruntergeladen.'))return;
+  await mutate(()=>{
+    download(backup(state),'school-vor-fortschritt-reset-'+Date.now()+'.json');
+    if(commit(resetProgress(state,selected))){stopTraining();session={good:0,bad:0};$('focus').value='all';render();$('toolsDialog').close();notice(names[selected]+': Lernfortschritt zurückgesetzt. Dein Wortschatz ist vollständig erhalten.');}
   });
 };
 init().catch(error=>notice('Beim Start ist ein Fehler aufgetreten: '+error.message,true));

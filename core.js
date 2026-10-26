@@ -198,3 +198,8 @@ export function resetLanguage(state,language){
   next.languages[language]={...emptyState().languages[language],catalogBatches:[...(previous.catalogBatches||[])]};
   return validateState(next);
 }
+export function resetProgress(state,language){
+  if(!LANGUAGES.includes(language))throw Error('Ungültige Sprache.');
+  const next=clone(state);next.languages[language].stats={};next.languages[language].cycles={};
+  return validateState(next);
+}

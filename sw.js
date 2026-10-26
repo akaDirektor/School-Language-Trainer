@@ -1,6 +1,6 @@
-const CACHE='school-language-trainer-shell-v6';
+const CACHE='school-language-trainer-shell-v7';
 const FILES=['./','./index.html','./app.css','./app.js','./core.js','./demo.js','./cloud.js','./cloud-config.js','./manifest.webmanifest','./icon.svg','./icon-180.png','./icon-192.png','./icon-512.png','./data/en.json','./data/es.json'];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll([...FILES,'./app.js?v=20261026-recall-answer1','./app.css?v=20261026-recall-answer1']))));
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll([...FILES,'./app.js?v=20261026-progress-reset1','./app.css?v=20261026-progress-reset1']))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('school-language-trainer-shell-')&&key!==CACHE).map(key=>caches.delete(key))))));
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET')return;
