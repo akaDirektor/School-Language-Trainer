@@ -58,7 +58,8 @@ function render(){
   const fields=[['Wörter in der Datenbank',s.databaseTotal],['Vollständig gelernt',s.databaseLearned],['Zuordnen · Treffsicherheit',accuracy(s.correct,s.wrong)],['Artikel · richtig / falsch',directional('articleCorrect')+' / '+directional('articleWrong')],['Artikel · Treffsicherheit',accuracy(directional('articleCorrect'),directional('articleWrong'))],['Erinnern · '+names[language]+' → DE',directional('recallForwardCorrect')+' / '+directional('recallForwardWrong')],['Erinnern · DE → '+names[language],directional('recallReverseCorrect')+' / '+directional('recallReverseWrong')],['Wörter im Training',s.total],['Aktiv erinnert · mindestens 3-mal',s.activeKnown],['Karten · richtig / falsch',s.correct+' / '+s.wrong],['Erinnern · richtig / falsch',s.recallCorrect+' / '+s.recallWrong],['Erinnern · Treffsicherheit',accuracy(s.recallCorrect,s.recallWrong)],['Kontext · richtig / falsch',s.contextCorrect+' / '+s.contextWrong],['Kontext · Treffsicherheit',accuracy(s.contextCorrect,s.contextWrong)],['Wörter mit Satzübungen',s.contextReady],['Ausgeblendete Wörter',b.hidden.length]];
   $('allMetrics').replaceChildren(...fields.map(([label,value])=>{const el=node('div',label);el.append(node('b',value));return el;}));
   renderActivity();renderLessons();renderDictionary();updateMode();
-  document.querySelectorAll('#addWord,#addLesson,#startTraining,#restoreBackup,#importVocabulary,#resetLanguage,#resetProgress').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
+  document.querySelectorAll('#addWord,#addLesson,#restoreBackup,#importVocabulary,#resetLanguage,#resetProgress').forEach(button=>button.disabled=!canWrite()||(button.id==='restoreBackup'&&!backupCandidate)||(button.id==='importVocabulary'&&!vocabCandidate));
+  $('startTraining').disabled=false;
   $('resetLanguage').textContent=names[language]+' · Wörter & Lernstand zurücksetzen';
   $('resetProgress').textContent=names[language]+' · nur Lernfortschritt zurücksetzen';
   if(cloud.enabled){$('storageNoteText').textContent=parentView?'Elternansicht · Lernstand des Schülerkontos':cloudLocked?'Für geräteübergreifendes Lernen bitte anmelden':'Cloud-Synchronisation · derselbe Lernstand auf deinen Geräten';$('localCallout').hidden=true;}
@@ -107,7 +108,14 @@ function renderDictionary(){
   }));$('showMore').hidden=words.length<=shownWords;
 }
 async function toggleHidden(id){await mutate(()=>{const next=clone(state),b=next.languages[language];b.hidden=b.hidden.includes(id)?b.hidden.filter(k=>k!==id):[...b.hidden,id];if(commit(next)){stopTraining();render();}});}
-function startTraining(){session={good:0,bad:0};showNext(true);}
+function startTraining(){
+  if(!canWrite()){
+    notice(!storageOK?'Der Lernstand ist zum Schutz deiner Daten gesperrt. Bitte eine Sicherung herunterladen und die Seite neu laden.':parentView?'Elternansicht: Trainieren ist nur mit dem Schülerkonto möglich.':'Bitte zuerst anmelden oder die Cloud-Verbindung prüfen.',true);
+    if(!$('toolsDialog').open)$('toolsDialog').showModal();
+    if(!cloud.connected)$('loginEmail').focus();return;
+  }
+  session={good:0,bad:0};showNext(true);
+}
 function showMatchingRound(scroll=false){
   const pending=book().words.find(w=>!book().hidden.includes(w.id)&&book().stats[w.id]?.pendingArticle);
   if(pending){stopTraining();openGermanArticle(pending.id,null);return;}
@@ -366,4 +374,5 @@ $('resetProgress').onclick=async()=>{
     if(commit(resetProgress(state,selected))){stopTraining();session={good:0,bad:0};$('focus').value='all';render();$('toolsDialog').close();notice(names[selected]+': Lernfortschritt zurückgesetzt. Dein Wortschatz ist vollständig erhalten.');}
   });
 };
-init().catch(error=>notice('Beim Start ist ein Fehler aufgetreten: '+error.message,true));
+document.documentElement.dataset.controlsReady='true';document.dispatchEvent(new Event('school-controls-ready'));
+init().catch(error=>{notice('Beim Start ist ein Fehler aufgetreten: '+error.message,true);$('appRecovery').hidden=false;$('toolsRecovery').hidden=false;});

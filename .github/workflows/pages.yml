@@ -26,12 +26,7 @@ jobs:
         with:
           enablement: true
       - name: Prepare public files
-        run: |
-          mkdir public
-          cp index.html app.css app.js core.js demo.js cloud.js cloud-config.js sw.js manifest.webmanifest icon.svg icon-180.png icon-192.png icon-512.png public/
-          cp -R data public/data
-          cp -R flags public/flags
-          touch public/.nojekyll
+        run: node prepare-public.mjs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
