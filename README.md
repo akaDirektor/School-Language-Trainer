@@ -1,6 +1,6 @@
 # Wort für Wort · School Language Trainer
 
-A small, dependency-free school vocabulary trainer for iPhone, tablet and computer. English first; an independent Spanish dictionary is ready for later. Translations and interface are German.
+A small, dependency-free school vocabulary trainer for iPhone, tablet and computer. Independent English and Spanish dictionaries share the same training features. Translations and interface are German.
 
 ## Learning
 
@@ -10,7 +10,7 @@ A small, dependency-free school vocabulary trainer for iPhone, tablet and comput
 - Named lessons/topics, multiple lessons per word, combined lesson filters, word-type/date/mastery filters, search, editing, hiding and restoring words.
 - Separate per-language counters, matching streaks, ready words, recall success, context success, accuracy, mistakes, seven-day activity, and a combined parent summary.
 
-All three exercises are independent and available immediately. The English corpus currently contains 35 reviewed blue headword records in Station 2 (29) and Station 3 (6); Spanish remains empty. Add only reviewed textbook vocabulary. The optional demo uses separate in-memory data and never writes into real dictionaries.
+All three exercises are independent and available immediately. The English corpus currently contains 35 reviewed blue headword records in Station 2 (29) and Station 3 (6); Spanish contains 30 reviewed black headword records in B1 · Block A from IMG_8589.heic, with 8 verbatim textbook example sentences and 22 authored examples. Add only reviewed textbook vocabulary. The optional demo uses separate in-memory data and never writes into real dictionaries.
 
 ## Start locally
 

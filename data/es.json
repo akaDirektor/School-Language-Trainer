@@ -1,1 +1,613 @@
-{"format":"school-vocabulary-v1","language":"es","lessons":[],"words":[]}
+{
+  "format": "school-vocabulary-v1",
+  "language": "es",
+  "batchId": "es-b1-block-a-20261026-v1",
+  "lessons": [
+    {
+      "id": "es-b1-block-a",
+      "name": "B1 · Block A"
+    }
+  ],
+  "words": [
+    {
+      "id": "es-b1-a-fideua",
+      "term": "la fideuá",
+      "de": "das valencianische Nudelgericht (mit Fischbrühe und Meeresfrüchten)",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "En Valencia comemos {{word}} con mariscos.",
+          "answer": "fideuá",
+          "translation": "In Valencia essen wir Fideuá mit Meeresfrüchten.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-torre",
+      "term": "la torre",
+      "de": "der Turm",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Desde la {{word}} podemos ver toda la ciudad.",
+          "answer": "torre",
+          "translation": "Vom Turm aus können wir die ganze Stadt sehen.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-catedral",
+      "term": "la catedral",
+      "de": "der Dom; die Kathedrale",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "La {{word}} está en el centro de la ciudad.",
+          "answer": "catedral",
+          "translation": "Die Kathedrale liegt im Stadtzentrum.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-refresco",
+      "term": "el refresco",
+      "de": "das Erfrischungsgetränk",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "En verano tenemos muchos {{word}} en casa.",
+          "answer": "refrescos",
+          "translation": "Im Sommer haben wir viele Erfrischungsgetränke zu Hause.",
+          "source": "textbook",
+          "reference": "B1 · Bloque A · IMG_8589.heic · Originalbeispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-hielo",
+      "term": "el hielo",
+      "de": "das Eis",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Quiero un refresco con {{word}}, por favor.",
+          "answer": "hielo",
+          "translation": "Ich hätte bitte gern ein Erfrischungsgetränk mit Eis.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-por-primera-vez",
+      "term": "por primera vez",
+      "de": "zum ersten Mal",
+      "type": "phrase",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Hoy pruebo la paella {{word}}.",
+          "answer": "por primera vez",
+          "translation": "Heute probiere ich zum ersten Mal Paella.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-paella",
+      "term": "la paella",
+      "de": "die Paella (valencianisches Reisgericht)",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Para comer vamos a preparar una {{word}} de pollo.",
+          "answer": "paella",
+          "translation": "Zum Mittagessen bereiten wir eine Paella mit Hähnchen zu.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-tradicional",
+      "term": "tradicional",
+      "de": "traditionell",
+      "type": "adjective",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "La paella es un plato {{word}} de Valencia.",
+          "answer": "tradicional",
+          "translation": "Paella ist ein traditionelles Gericht aus Valencia.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-merecer-la-pena",
+      "term": "merecer la pena",
+      "de": "sich lohnen",
+      "type": "verb",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: merecer (-zco) la pena",
+      "examples": [
+        {
+          "sentence": "{{word}} comer en el restaurante nuevo.",
+          "answer": "Merece la pena",
+          "translation": "Es lohnt sich, im neuen Restaurant zu essen.",
+          "source": "textbook",
+          "reference": "B1 · Bloque A · IMG_8589.heic · Originalbeispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-pollo",
+      "term": "el pollo",
+      "de": "das Hähnchen",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Hoy comemos {{word}} con arroz.",
+          "answer": "pollo",
+          "translation": "Heute essen wir Hähnchen mit Reis.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-conejo",
+      "term": "el conejo",
+      "de": "das Kaninchen",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Mi abuela prepara arroz con {{word}}.",
+          "answer": "conejo",
+          "translation": "Meine Großmutter bereitet Reis mit Kaninchen zu.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-horchata",
+      "term": "la horchata",
+      "de": "die Erdmandelmilch",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Cuando hace calor, me gusta beber {{word}} fría.",
+          "answer": "horchata",
+          "translation": "Wenn es heiß ist, trinke ich gern kalte Erdmandelmilch.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-ronda",
+      "term": "la ronda",
+      "de": "die Runde",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Después de la primera {{word}}, pedimos más bebidas.",
+          "answer": "ronda",
+          "translation": "Nach der ersten Runde bestellen wir weitere Getränke.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-farton",
+      "term": "el fartón",
+      "de": "das valencianische Gebäck",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Tomo un {{word}} con mi horchata.",
+          "answer": "fartón",
+          "translation": "Ich esse ein valencianisches Gebäck zu meiner Erdmandelmilch.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-ponerse-morado",
+      "term": "ponerse morado; ponerse morada",
+      "de": "sich den Bauch vollschlagen",
+      "type": "verb",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: ponerse (irr.) morado,-a",
+      "examples": [
+        {
+          "sentence": "Con tanta comida, hoy vamos a {{word}}.",
+          "answer": "ponernos morados",
+          "translation": "Bei so viel Essen werden wir uns heute den Bauch vollschlagen.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-delicioso",
+      "term": "delicioso; deliciosa",
+      "de": "köstlich",
+      "type": "adjective",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: delicioso,-a",
+      "examples": [
+        {
+          "sentence": "La comida está {{word}}.",
+          "answer": "deliciosa",
+          "translation": "Das Essen ist köstlich.",
+          "source": "textbook",
+          "reference": "B1 · Bloque A · IMG_8589.heic · Originalbeispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-es-una-pasada",
+      "term": "Es una pasada",
+      "de": "Das ist der Hammer; Das ist der Wahnsinn",
+      "type": "phrase",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "¡Esta fiesta {{word}}!",
+          "answer": "es una pasada",
+          "translation": "Dieses Fest ist der Hammer!",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-quemar",
+      "term": "quemar",
+      "de": "etwas verbrennen; etwas in Brand setzen",
+      "type": "verb",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: quemar algo",
+      "examples": [
+        {
+          "sentence": "No quiero {{word}} el papel.",
+          "answer": "quemar",
+          "translation": "Ich möchte das Papier nicht verbrennen.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-figura",
+      "term": "la figura",
+      "de": "die Figur",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "En la plaza hay una {{word}} muy grande.",
+          "answer": "figura",
+          "translation": "Auf dem Platz steht eine sehr große Figur.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-carton",
+      "term": "el cartón",
+      "de": "die Pappe",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Para hacer la figura necesitamos {{word}} y papel.",
+          "answer": "cartón",
+          "translation": "Um die Figur zu basteln, brauchen wir Pappe und Papier.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-banda",
+      "term": "la banda",
+      "de": "die Musikkapelle",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "La {{word}} toca música en la plaza.",
+          "answer": "banda",
+          "translation": "Die Musikkapelle spielt Musik auf dem Platz.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-despertarse",
+      "term": "despertarse",
+      "de": "aufwachen",
+      "type": "verb",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: despertarse (-ie-)",
+      "examples": [
+        {
+          "sentence": "Me {{word}} por el ruido.",
+          "answer": "desperté",
+          "translation": "Ich bin wegen des Lärms aufgewacht.",
+          "source": "textbook",
+          "reference": "B1 · Bloque A · IMG_8589.heic · Originalbeispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-explosion",
+      "term": "la explosión",
+      "de": "die Explosion",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Oímos una {{word}} y salimos de casa.",
+          "answer": "explosión",
+          "translation": "Wir hören eine Explosion und gehen aus dem Haus.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-susto",
+      "term": "el susto",
+      "de": "der Schreck",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "¡Qué {{word}} me has dado!",
+          "answer": "susto",
+          "translation": "Was hast du mir für einen Schreck eingejagt!",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-fuegos-artificiales",
+      "term": "los fuegos artificiales",
+      "de": "das Feuerwerk",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: los fuegos artificiales (pl.)",
+      "examples": [
+        {
+          "sentence": "Por la noche vemos los {{word}} en el cielo.",
+          "answer": "fuegos artificiales",
+          "translation": "Am Abend sehen wir das Feuerwerk am Himmel.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-ninot",
+      "term": "el ninot",
+      "de": "die große Skulptur aus Pappmaché",
+      "type": "noun",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "Este {{word}} es una gran figura de papel maché.",
+          "answer": "ninot",
+          "translation": "Dieser Ninot ist eine große Figur aus Pappmaché.",
+          "source": "generated",
+          "reference": "B1 · Bloque A · IMG_8589.heic · selbst erstelltes Beispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-cada",
+      "term": "cada",
+      "de": "jede; jeder; jedes",
+      "type": "other",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic",
+      "examples": [
+        {
+          "sentence": "{{word}} día hicimos treinta kilómetros en bicicleta.",
+          "answer": "Cada",
+          "translation": "Wir sind jeden Tag 30 Kilometer mit dem Rad gefahren.",
+          "source": "textbook",
+          "reference": "B1 · Bloque A · IMG_8589.heic · Originalbeispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-sino",
+      "term": "sino; sino que",
+      "de": "sondern",
+      "type": "other",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: sino (que)",
+      "examples": [
+        {
+          "sentence": "No vamos en coche {{word}} en bicicleta.",
+          "answer": "sino",
+          "translation": "Wir fahren nicht mit dem Auto, sondern mit dem Rad.",
+          "source": "textbook",
+          "reference": "B1 · Bloque A · IMG_8589.heic · Originalbeispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-llevar",
+      "term": "llevar",
+      "de": "etwas/jemanden (hin)bringen",
+      "type": "verb",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: llevar algo / a alguien",
+      "examples": [
+        {
+          "sentence": "Mi madre me {{word}} al colegio.",
+          "answer": "lleva",
+          "translation": "Meine Mutter bringt mich zur Schule.",
+          "source": "textbook",
+          "reference": "B1 · Bloque A · IMG_8589.heic · Originalbeispiel"
+        }
+      ]
+    },
+    {
+      "id": "es-b1-a-me-gustaria",
+      "term": "Me gustaría",
+      "de": "Ich würde gerne; Ich möchte",
+      "type": "phrase",
+      "lessonIds": [
+        "es-b1-block-a"
+      ],
+      "addedAt": "2026-10-26",
+      "reference": "B1 · Bloque A · IMG_8589.heic · Buchform: Me gustaría …",
+      "examples": [
+        {
+          "sentence": "{{word}} ir a las montañas.",
+          "answer": "Me gustaría",
+          "translation": "Ich würde gerne in die Berge fahren.",
+          "source": "textbook",
+          "reference": "B1 · Bloque A · IMG_8589.heic · Originalbeispiel"
+        }
+      ]
+    }
+  ]
+}
