@@ -41,3 +41,24 @@ test('writing pages follow the selected lessons without repeats and grade every 
  assert.equal(state.languages.en.stats[first.words[1].id].recallForwardCorrect,1);
  assert.equal(state.languages.en.stats[first.words[1].id].correct,0);
 });
+
+test('written successes are counted separately, survive validation and backups, and count each word once',async()=>{
+ const {writingPage,gradeWritingPage,summarize,validateState,backup,parseBackup,resetProgress}=await import('../core.js');
+ let state=applyCatalog(emptyState(),corpus).state;
+ const options={mode:'recall',focus:'all',type:'all',period:'all',lessonIds:['station-3'],direction:'reverse'};
+ let page=writingPage(state.languages.en,options,15),answers=page.words.map(w=>recallAnswers(w,'reverse')[0]);answers[0]='wrong';
+ state=gradeWritingPage(state,'en',page,answers,'reverse').state;
+ assert.equal(summarize(state.languages.en).databaseWritingPassed,5);
+ assert.equal(state.languages.en.stats[page.words[0].id].writingWrong,1);
+ assert.equal(state.languages.en.stats[page.words[1].id].writingCorrect,1);
+ assert.deepEqual(parseBackup(backup(state)),state);assert.deepEqual(validateState(state),state);
+ delete state.languages.en.cycles[page.scope];page=writingPage(state.languages.en,options,15);
+ state=gradeWritingPage(state,'en',page,page.words.map(w=>recallAnswers(w,'reverse')[0]),'reverse').state;
+ state.languages.en.hidden=[page.words[1].id];assert.equal(summarize(state.languages.en).databaseWritingPassed,6);assert.equal(state.languages.en.stats[page.words[1].id].writingCorrect,2);
+ assert.equal(summarize(state.languages.es).databaseWritingPassed,0);assert.equal(summarize(resetProgress(state,'en').languages.en).databaseWritingPassed,0);
+ const bad=structuredClone(state);bad.languages.en.stats[page.words[1].id].writingCorrect=-1;assert.throws(()=>validateState(bad));
+});
+test('historical recall answers do not fabricate written successes',async()=>{
+ const {summarize,validateState}=await import('../core.js');let state=applyCatalog(emptyState(),corpus).state;
+ state=recordAnswer(state,'en','en-s2-account','recall',true);assert.equal(summarize(state.languages.en).databaseWritingPassed,0);assert.equal(summarize(state.languages.en).databaseRecallPassed,1);assert.deepEqual(validateState(state),state);
+});
