@@ -6,6 +6,8 @@ const $=id=>document.getElementById(id), names={en:'Englisch',es:'Spanisch'}, ty
 let state=emptyState(),language='en',mode='cards',selectedLessons=[],demo=false,realState=null,storageOK=true,lastRaw=null,current=null,editingId=null,shownWords=30,session={good:0,bad:0},vocabCandidate=null,backupCandidate=null,seedSources=[];
 let articleQuestion=null;
 const lessonMemory={en:[],es:[]};
+let selectedActivityDay=null;
+const dailySeries=[['cards','Paare','▤'],['recall','Erinnern','↻'],['context','Sätze','▧'],['writing','Schreiben','✎']];
 let cloudLocked=Boolean(cloudConfig.url&&cloudConfig.publishableKey),parentView=false;
 const cloud=createCloud(cloudConfig,{
   status(message){$('cloudStatus').textContent=message;$('saveState').textContent=message;},
@@ -71,11 +73,22 @@ function render(){
   }
 }
 function renderActivity(){
-  const days=activity(book());$('weekTotal').textContent=days.reduce((sum,d)=>sum+d.count,0)+' Wort-Tage';
+  const days=activity(book()),maximum=Math.max(1,...days.flatMap(d=>dailySeries.map(([mode])=>d.successes[mode])));
+  $('weekTotal').textContent=days.reduce((sum,d)=>sum+d.count,0)+' Wort-Tage';
+  const selected=days.find(d=>d.day===selectedActivityDay)||days.at(-1);selectedActivityDay=selected.day;
   $('dailyChart').replaceChildren(...days.map((d,i)=>{
-    const col=node('div',null,'day-column'+(i===6?' today':''));col.setAttribute('aria-label',`${formatDate(d.day)}: ${d.count} von ${d.total} Wörtern geübt`);
-    col.append(node('span',d.count,'day-value'));const track=node('div',null,'day-track'),fill=node('div',null,'day-fill');fill.style.height=(d.total?Math.max(d.count?4:0,d.count/d.total*100):0)+'%';track.append(fill);col.append(track,node('span',new Date(d.day+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short'}),'day-label'));return col;
+    const unknown=!d.trackedWords&&d.legacyWords>0;
+    const description=`${formatDate(d.day)}: `+(unknown?'Erfolge damals nicht getrennt erfasst.':dailySeries.map(([mode,label])=>label+': '+d.successes[mode]).join(', '));
+    const col=node('button',null,'day-column'+(i===6?' today':'')+(unknown?' day-unknown':''));col.type='button';col.title=description;col.setAttribute('aria-label',description);col.setAttribute('aria-pressed',String(d.day===selected.day));
+    col.append(node('span',unknown?'—':d.succeeded+' ✓','day-value'));
+    const group=node('span',null,'day-bars');group.setAttribute('aria-hidden','true');
+    for(const [mode]of dailySeries){const track=node('span',null,'series-track'),fill=node('span',null,'series-fill series-'+mode);fill.style.height=(d.successes[mode]/maximum*100)+'%';track.append(fill);group.append(track);}
+    col.append(group,node('span',new Date(d.day+'T12:00:00').toLocaleDateString('de-DE',{weekday:'short'}),'day-label'));
+    col.onclick=()=>{selectedActivityDay=d.day;renderActivity();};return col;
   }));
+  const unknown=!selected.trackedWords&&selected.legacyWords>0;
+  $('activityDayDetails').replaceChildren(node('strong',formatDate(selected.day)) ,...dailySeries.map(([mode,label,symbol])=>node('span',symbol+' '+label+': '+(unknown?'—':selected.successes[mode]),'day-detail series-'+mode)));
+  $('activityHistoryNote').textContent=unknown?'Für diesen Tag wurden nur geübte Wörter gespeichert. Erfolge je Übung werden seit diesem Update erfasst.':'Verschiedene richtig beantwortete Wörter pro Tag und Übung · Wiederholungen zählen einmal. ✓ = in mindestens einer Übung richtig. Erfolge je Übung werden seit diesem Update erfasst; ausgeblendete Wörter zählen nicht mit.';
 }
 function renderLessons(){
   const all=node('button','Alle Lektionen');all.type='button';all.setAttribute('aria-pressed',String(!selectedLessons.length));all.onclick=()=>{selectedLessons=[];lessonMemory[language]=[];stopTraining();render();};
