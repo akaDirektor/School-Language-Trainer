@@ -139,6 +139,16 @@ export function nextWord(book,options,random=Math.random) {
   }
   return {word:available[Math.min(available.length-1,Math.floor(random()*available.length))],scope,seen:[...seen]};
 }
+export function recallRound(book,options,previousIds=[],random=Math.random){
+  const words=shuffled(eligibleWords(book,{...options,mode:'recall'}),random),ids=words.map(w=>w.id);
+  if(ids.length>1&&ids.length===previousIds.length&&ids.every((id,i)=>id===previousIds[i]))ids.push(ids.shift());
+  return {ids,seen:[],scope:scopeKey({...options,mode:'recall'})};
+}
+export function nextRecallWord(book,round){
+  const words=round.ids.map(id=>book.words.find(w=>w.id===id)).filter(w=>w&&!book.hidden.includes(w.id));
+  const seen=round.seen.filter(id=>words.some(w=>w.id===id));
+  return {word:words.find(w=>!seen.includes(w.id))||null,scope:round.scope,seen,total:words.length,complete:words.length>0&&seen.length===words.length};
+}
 export function summarize(book,day=dayKey()) {
   const words=book.words.filter(w=>!book.hidden.includes(w.id)), result={databaseTotal:book.words.length,databaseCorrect:0,databaseOnce:0,databaseTwice:0,databaseReady:0,databaseLearned:0,databaseRecallPassed:0,databaseContextPassed:0,databaseWritingPassed:0,databaseWritingMastered:0,total:words.length,today:0,ready:0,once:0,twice:0,learned:0,activeKnown:0,correct:0,wrong:0,recallCorrect:0,recallWrong:0,contextCorrect:0,contextWrong:0,contextReady:0,mistakes:0};
   for(const w of book.words){const st=wordStats(book,w.id);result.databaseCorrect+=st.correct;if(st.streak===1)result.databaseOnce++;if(st.streak===2)result.databaseTwice++;if(st.streak>=3)result.databaseReady++;if(isLearned(st))result.databaseLearned++;if(st.recallCorrect>0)result.databaseRecallPassed++;if(st.contextCorrect>0)result.databaseContextPassed++;if(st.writingCorrect>0)result.databaseWritingPassed++;if(st.writingCorrect>=3)result.databaseWritingMastered++;}

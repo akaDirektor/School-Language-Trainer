@@ -1,10 +1,11 @@
-import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,writingPage,gradeWritingPage,matchingRound,matchingText,germanArticles,germanArticlesRequired,shouldAskGermanArticle,beginArticleMatch,answerGermanArticle,isLearned} from './core.js';
+import {LANGUAGES,STORAGE_KEY,emptyState,clone,normalize,dayKey,validateState,validateWord,wordStats,recordAnswer,eligibleWords,nextWord,recallRound,nextRecallWord,summarize,activity,promptTerm,checkContext,mergeVocabulary,backup,parseBackup,applyCatalog,resetLanguage,resetProgress,recallPrompt,writingPage,gradeWritingPage,matchingRound,matchingText,germanArticles,germanArticlesRequired,shouldAskGermanArticle,beginArticleMatch,answerGermanArticle,isLearned} from './core.js';
 import {demoState} from './demo.js';
 import {cloudConfig} from './cloud-config.js';
 import {createCloud} from './cloud.js';
 const $=id=>document.getElementById(id), names={en:'Englisch',es:'Spanisch'}, typeNames={noun:'Nomen',verb:'Verb',adjective:'Adjektiv',adverb:'Adverb',phrase:'Wendung',other:'Andere'};
 let state=emptyState(),language='en',mode='cards',selectedLessons=[],demo=false,realState=null,storageOK=true,lastRaw=null,current=null,editingId=null,shownWords=30,session={good:0,bad:0},vocabCandidate=null,backupCandidate=null,seedSources=[];
-let articleQuestion=null;
+let articleQuestion=null,recallSession=null;
+const lastRecallOrders=new Map();
 const lessonMemory={en:[],es:[]};
 let selectedActivityDay=null;
 const dailySeries=[['cards','Paare','▤'],['recall','Erinnern','↻'],['context','Sätze','▧'],['writing','Schreiben','✎']];
@@ -43,7 +44,7 @@ async function mutate(action){
   // All mutations below are synchronous; the raw-value check still protects stale tabs.
   return action();
 }
-function stopTraining(){document.body.classList.remove('writing-active');current=null;articleQuestion=null;if($('germanArticleDialog').open)$('germanArticleDialog').close();$('training').hidden=true;}
+function stopTraining(){document.body.classList.remove('writing-active');current=null;recallSession=null;articleQuestion=null;if($('germanArticleDialog').open)$('germanArticleDialog').close();$('training').hidden=true;}
 function accuracy(good,bad){return good+bad?Math.round(good/(good+bad)*100)+'%':'—';}
 function formatDate(day){return new Date(day+'T12:00:00').toLocaleDateString('de-DE',{day:'numeric',month:'short'});}
 function render(){
@@ -127,9 +128,17 @@ function startTraining(){
     if(!$('toolsDialog').open)$('toolsDialog').showModal();
     if(!cloud.connected)$('loginEmail').focus();return;
   }
-  session={good:0,bad:0};showNext(true);
+  session={good:0,bad:0};recallSession=null;
+  if(mode==='recall'&&$('recallMethod').value==='mental'){
+    const key=language+'|'+JSON.stringify(options());let previous=lastRecallOrders.get(key)||[];
+    try{if(!previous.length){const stored=JSON.parse(localStorage.getItem('school-language-trainer:recall-order:v1')||'null');if(stored?.key===key&&Array.isArray(stored.ids)&&stored.ids.every(id=>typeof id==='string'))previous=stored.ids;}}catch{}
+    recallSession=recallRound(book(),options(),previous);lastRecallOrders.set(key,[...recallSession.ids]);
+    try{localStorage.setItem('school-language-trainer:recall-order:v1',JSON.stringify({key,ids:recallSession.ids}));}catch{}
+  }
+  showNext(true);
 }
 function showMatchingRound(scroll=false){
+  $('recallComplete').hidden=true;
   const pending=book().words.find(w=>!book().hidden.includes(w.id)&&book().stats[w.id]?.pendingArticle);
   if(pending&&germanArticlesRequired(state)){stopTraining();openGermanArticle(pending.id,null);return;}
   const round=matchingRound(book(),options(),language);
@@ -225,13 +234,15 @@ function showNext(scroll=false){
   if(mode==='cards'){showMatchingRound(scroll);return;}
   if(mode==='recall'&&$('recallMethod').value==='written'){showWritingPage(scroll);return;}
   $('writingSheet').hidden=true;
-  const choice=nextWord(book(),options());
+  $('recallComplete').hidden=true;
+  const choice=mode==='recall'&&recallSession?nextRecallWord(book(),recallSession):nextWord(book(),options());
+  if(choice.complete){showRecallComplete(choice.total);return;}
   if(!choice.word){stopTraining();notice(mode==='cards'?'Für diese Auswahl gibt es keine offenen Wörter. Füge Wörter hinzu oder wähle einen anderen Lernstand.':mode==='recall'?'Für diese Auswahl gibt es keine Wörter. Bitte andere Lektionen oder Filter wählen.':'Für diese Auswahl gibt es keine Beispielsätze. Bitte andere Lektionen wählen oder einen Satz ergänzen.');return;}
   notice('');const w=choice.word,examples=[...w.examples].sort((a,b)=>(a.source==='textbook'?0:1)-(b.source==='textbook'?0:1));
   current={id:w.id,language,mode,direction:$('recallDirection').value,scope:choice.scope,seen:choice.seen,revealed:false,answered:false,example:examples.length?examples[(wordStats(book(),w.id).contextCorrect+wordStats(book(),w.id).contextWrong)%examples.filter(e=>e.source===examples[0].source).length]:null};
   $('matchingBoard').hidden=true;$('wordCard').hidden=false;$('hideTrainingWord').hidden=false;
   $('training').hidden=false;$('trainingMode').textContent={cards:'WORTKARTEN',recall:'AKTIV ERINNERN',context:'WÖRTER IM SATZ'}[mode];$('trainingTitle').textContent=mode==='context'?'Welches Wort fehlt?':mode==='recall'?'Weißt du die Übersetzung?':'Deine nächste Karte';
-  $('trainingStatus').textContent=progressLabel(w)+' · '+eligibleWords(book(),options()).length+' Wörter in dieser Auswahl';$('wordLesson').textContent=w.lessonIds.map(id=>book().lessons.find(l=>l.id===id)?.name).filter(Boolean).join(' · ')||'Ohne Lektion';
+  $('trainingStatus').textContent=(mode==='recall'&&recallSession?'Wort '+(choice.seen.length+1)+' von '+choice.total+' · ':'')+progressLabel(w)+' · '+eligibleWords(book(),options()).length+' Wörter in dieser Auswahl';$('wordLesson').textContent=w.lessonIds.map(id=>book().lessons.find(l=>l.id===id)?.name).filter(Boolean).join(' · ')||'Ohne Lektion';
   const prompt=recallPrompt(w,language,current.direction);
   $('promptLabel').textContent=mode==='recall'?(current.direction==='reverse'?'Deutsch → '+names[language]:names[language]+' → Deutsch'):names[language];$('wordPrompt').lang=mode==='recall'?prompt.language:language;$('wordPrompt').classList.toggle('context-prompt',mode==='context');$('wordPrompt').textContent=mode==='context'?current.example.sentence.replace('{{word}}','_______'):prompt.text;
   $('contextForm').hidden=mode!=='context';$('contextInput').value='';$('contextInput').disabled=false;$('contextInput').lang=language;$('checkContext').disabled=false;
@@ -239,6 +250,12 @@ function showNext(scroll=false){
   $('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;
   if(scroll){$('training').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});$('trainingTitle').focus({preventScroll:true});}
   if(mode==='context')$('contextInput').focus({preventScroll:!scroll});
+}
+function showRecallComplete(total){
+  current=null;$('training').hidden=false;$('wordCard').hidden=true;$('matchingBoard').hidden=true;$('writingSheet').hidden=true;$('judgeButtons').hidden=true;$('contextNext').hidden=true;$('hideTrainingWord').hidden=true;
+  $('trainingTitle').textContent='Durchgang abgeschlossen.';$('trainingStatus').textContent=total+' von '+total+' Wörtern abgefragt';$('recallComplete').hidden=false;
+  $('recallCompleteText').textContent='Alle '+total+' Wörter wurden genau einmal abgefragt. '+session.good+' richtig · '+session.bad+' noch üben. Ein neuer Durchgang mischt dieselbe Auswahl neu.';
+  $('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;
 }
 function reveal(){
   if(!current||current.language!==language)return;
@@ -257,7 +274,7 @@ async function answer(ok){
     if(current!==question)return;
     try{
       const next=recordAnswer(state,question.language,question.id,question.mode,ok,dayKey(),question.direction);next.languages[question.language].cycles[question.scope]=[...new Set([...question.seen,question.id])];
-      if(commit(next)){session[ok?'good':'bad']++;render();if(question.mode!=='context')showNext();else{$('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;}}
+      if(commit(next)){session[ok?'good':'bad']++;if(question.mode==='recall'&&recallSession)recallSession.seen=[...new Set([...question.seen,question.id])];render();if(question.mode!=='context')showNext();else{$('sessionStats').textContent=`Diese Runde: ${session.good} richtig · ${session.bad} noch üben`;}}
     }catch(error){notice(error.message,true);}
   });$('answerCorrect').disabled=$('answerWrong').disabled=false;
 }
@@ -269,6 +286,7 @@ async function submitContext(){
   await answer(ok);if(current&&storageOK){$('contextNext').hidden=false;$('contextNext').focus();}
 }
 function showWritingPage(scroll=false){
+  $('recallComplete').hidden=true;
   const direction=$('recallDirection').value,page=writingPage(book(),options(),Number($('writingPageSize').value));
   if(!page.total){stopTraining();notice('Keine Wörter ausgewählt. Bitte eine Lektion wählen.');return;}
   notice('');current={...page,mode:'recall',written:true,language,direction,answered:false,busy:false,rows:[]};
@@ -366,7 +384,7 @@ document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{mod
 document.querySelectorAll('[data-progress]').forEach(button=>button.onclick=()=>openProgress(button.dataset.progress));
 for(const id of ['focus','type','period','recallDirection','recallMethod','writingPageSize'])$(id).onchange=()=>{stopTraining();render();};
 $('search').oninput=()=>{shownWords=30;renderDictionary();};$('showHidden').onchange=renderDictionary;$('showMore').onclick=()=>{shownWords+=30;renderDictionary();};
-$('startTraining').onclick=startTraining;$('stopTraining').onclick=stopTraining;$('revealAnswer').onclick=reveal;$('answerCorrect').onclick=()=>answer(true);$('answerWrong').onclick=()=>answer(false);$('checkContext').onclick=submitContext;$('contextNext').onclick=()=>showNext();
+$('restartRecall').onclick=startTraining;$('startTraining').onclick=startTraining;$('stopTraining').onclick=stopTraining;$('revealAnswer').onclick=reveal;$('answerCorrect').onclick=()=>answer(true);$('answerWrong').onclick=()=>answer(false);$('checkContext').onclick=submitContext;$('contextNext').onclick=()=>showNext();
 $('writingSheet').onsubmit=submitWritingPage;$('nextWritingSheet').onclick=()=>{if(current?.written&&current.answered&&!current.busy)showWritingPage(true);};
 $('contextInput').oninput=()=>{$('contextInput').setCustomValidity('');};$('contextInput').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submitContext();}};
 $('hideTrainingWord').onclick=()=>{if(current&&confirm('Dieses Wort ausblenden? Du kannst es im Wörterbuch wieder einblenden.'))toggleHidden(current.id);};
