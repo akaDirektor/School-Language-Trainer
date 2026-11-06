@@ -11,7 +11,7 @@ export function t(key,args=[]){
   }
   const row=messages[key];if(!row)return '';
   let text=row[language==='en'?1:language==='es'?2:0],index=0;
-  text=text.replace(/\$\{[^}]+\}/g,()=>String(args[index++]??'')).replace(/(?<!\{)\{(\d+)\}(?!\})/g,(_,i)=>String(args[Number(i)]??''));
+  text=text.replace(/\$\{[^}]+\}/g,()=>String(args[index++]??'')).replace(/\{(\d+)\}/g,(_,i)=>String(args[Number(i)]??''));
   if(args.length)rendered.set(text,{key,args:[...args]});
   return text;
 }
