@@ -6,13 +6,13 @@ const sourceRoot=fileURLToPath(new URL('.',import.meta.url));
 const fingerprint=value=>createHash('sha256').update(value).digest('hex').slice(0,16);
 export async function buildSite(destination=path.join(sourceRoot,'public')){
   await mkdir(destination,{recursive:true});const names={},assets=[];
-  for(const filename of ['core.js','cloud-config.js','demo.js','cloud.js','bootstrap.js','app.js','app.css']){
+  for(const filename of ['i18n-catalog.js','i18n.js','core.js','cloud-config.js','demo.js','cloud.js','bootstrap.js','app.js','app.css']){
     let content=await readFile(path.join(sourceRoot,filename),'utf8');
     for(const [original,hashed] of Object.entries(names))content=content.split('./'+original+"'").join('./'+hashed+"'").split('./'+original+'"').join('./'+hashed+'"');
     const extension=path.extname(filename),hashed=filename.slice(0,-extension.length)+'.'+fingerprint(content)+extension;
     names[filename]=hashed;assets.push('./'+hashed);await writeFile(path.join(destination,hashed),content);
   }
-  for(const filename of ['manifest.webmanifest','icon.svg','icon-180.png','icon-192.png','icon-512.png','data/en.json','data/es.json','flags/gb.svg','flags/es.svg']){
+  for(const filename of ['manifest.webmanifest','manifest-en.webmanifest','manifest-es.webmanifest','icon.svg','icon-180.png','icon-192.png','icon-512.png','data/en.json','data/es.json','flags/gb.svg','flags/es.svg']){
     await mkdir(path.dirname(path.join(destination,filename)),{recursive:true});await cp(path.join(sourceRoot,filename),path.join(destination,filename));assets.push('./'+filename);
   }
   let html=await readFile(path.join(sourceRoot,'index.html'),'utf8');

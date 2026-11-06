@@ -1,3 +1,4 @@
+import {t} from './i18n.js';
 export const LANGUAGES = ['en', 'es'];
 export const STORAGE_KEY = 'school-language-trainer:state:v1';
 export const FORMAT = 'school-language-trainer-backup-v1';
@@ -9,87 +10,87 @@ export const normalize = value => value.normalize('NFC').trim().replace(/\s+/g, 
 export const dayKey = (date = new Date()) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 function validDay(value) { return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value+'T12:00:00Z')) && new Date(value+'T12:00:00Z').toISOString().slice(0,10) === value; }
 function text(value, label, max = 500) {
-  if(typeof value !== 'string' || !value.trim() || value.length > max) throw Error(`${label}: Bitte einen gültigen Text eingeben (max. ${max} Zeichen).`);
+  if(typeof value !== 'string' || !value.trim() || value.length > max) throw Error(t(188,[label,max]));
   return value.normalize('NFC').trim();
 }
-function id(value) { if(typeof value !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(value)) throw Error('Ungültige ID.'); return value; }
-function uniqueIds(items) { const seen = new Set(); for(const item of items) { if(seen.has(item.id)) throw Error('Doppelte ID: '+item.id); seen.add(item.id); } }
+function id(value) { if(typeof value !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$/.test(value)) throw Error(t(189)); return value; }
+function uniqueIds(items) { const seen = new Set(); for(const item of items) { if(seen.has(item.id)) throw Error(t(487)+item.id); seen.add(item.id); } }
 export function emptyState() {
   return {schema:1, languages:Object.fromEntries(LANGUAGES.map(lang => [lang,{lessons:[],words:[],stats:{},hidden:[],cycles:{},catalogBatches:[]}]))};
 }
 export function validateWord(raw, language) {
-  if(!raw || typeof raw !== 'object' || !LANGUAGES.includes(language)) throw Error('Ungültiges Wort.');
-  const word = {id:id(raw.id), term:text(raw.term,'Wort',200), de:text(raw.de,'Deutsche Übersetzung',500), type:raw.type,
-    lessonIds:[...new Set(raw.lessonIds || [])].map(id), addedAt:raw.addedAt || dayKey(), reference:raw.reference ? text(raw.reference,'Quelle',500) : '', examples:[]};
-  if(!TYPES.includes(word.type) || !validDay(word.addedAt)) throw Error('Wortart oder Datum ungültig.');
-  if(word.type === 'noun' && !/^(der|die|das)\s+\S/i.test(word.de)) throw Error('Deutsche Nomen bitte mit der, die oder das speichern.');
-  if(word.type === 'noun' && language === 'es' && !/^(el|la|los|las)\s+\S/i.test(word.term)) throw Error('Spanische Nomen bitte mit el, la, los oder las speichern.');
-  if(!Array.isArray(raw.examples || []) || (raw.examples || []).length > 20) throw Error('Zu viele Beispielsätze.');
+  if(!raw || typeof raw !== 'object' || !LANGUAGES.includes(language)) throw Error(t(190));
+  const word = {id:id(raw.id), term:text(raw.term,t(191),200), de:text(raw.de,t(192),500), type:raw.type,
+    lessonIds:[...new Set(raw.lessonIds || [])].map(id), addedAt:raw.addedAt || dayKey(), reference:raw.reference ? text(raw.reference,t(193),500) : '', examples:[]};
+  if(!TYPES.includes(word.type) || !validDay(word.addedAt)) throw Error(t(194));
+  if(word.type === 'noun' && !/^(der|die|das)\s+\S/i.test(word.de)) throw Error(t(195));
+  if(word.type === 'noun' && language === 'es' && !/^(el|la|los|las)\s+\S/i.test(word.term)) throw Error(t(196));
+  if(!Array.isArray(raw.examples || []) || (raw.examples || []).length > 20) throw Error(t(197));
   word.examples = (raw.examples || []).map(example => {
-    const result = {sentence:text(example.sentence,'Lückensatz',2000),answer:text(example.answer,'Lösung',200),translation:example.translation ? text(example.translation,'Satzübersetzung',2000) : '',source:example.source,reference:example.reference ? text(example.reference,'Satzquelle',500) : ''};
-    if(result.sentence.split('{{word}}').length !== 2) throw Error('Der Satz muss genau eine Lücke {{word}} enthalten.');
-    if(!['textbook','generated'].includes(result.source)) throw Error('Satzquelle muss textbook oder generated sein.');
-    if(example.acceptedAnswers!=null){if(!Array.isArray(example.acceptedAnswers)||example.acceptedAnswers.length>8)throw Error('Ungültige alternative Lösungen.');result.acceptedAnswers=[...new Set(example.acceptedAnswers.map(value=>text(value,'Alternative Lösung',200)))];}
+    const result = {sentence:text(example.sentence,t(198),2000),answer:text(example.answer,t(199),200),translation:example.translation ? text(example.translation,t(200),2000) : '',source:example.source,reference:example.reference ? text(example.reference,t(500),500) : ''};
+    if(result.sentence.split('{{word}}').length !== 2) throw Error(t(201));
+    if(!['textbook','generated'].includes(result.source)) throw Error(t(202));
+    if(example.acceptedAnswers!=null){if(!Array.isArray(example.acceptedAnswers)||example.acceptedAnswers.length>8)throw Error(t(203));result.acceptedAnswers=[...new Set(example.acceptedAnswers.map(value=>text(value,t(204),200)))];}
     return result;
   });
   return word;
 }
 function validateLessons(raw) {
-  if(!Array.isArray(raw) || raw.length > 1000) throw Error('Ungültige Lektionen.');
-  const lessons = raw.map(item => ({id:id(item.id),name:text(item.name,'Lektionsname',120)})); uniqueIds(lessons); return lessons;
+  if(!Array.isArray(raw) || raw.length > 1000) throw Error(t(205));
+  const lessons = raw.map(item => ({id:id(item.id),name:text(item.name,t(501),120)})); uniqueIds(lessons); return lessons;
 }
 function validateWords(raw, language, lessons) {
-  if(!Array.isArray(raw) || raw.length > 20000) throw Error('Ungültige Wörterliste.');
+  if(!Array.isArray(raw) || raw.length > 20000) throw Error(t(206));
   const words = raw.map(w => validateWord(w,language)); uniqueIds(words);
   const lessonIds = new Set(lessons.map(l => l.id)), terms = new Set();
   for(const word of words) {
-    if(word.lessonIds.some(l => !lessonIds.has(l))) throw Error('Unbekannte Lektion bei '+word.term);
-    if(terms.has(normalize(word.term))) throw Error('Doppeltes Wort: '+word.term); terms.add(normalize(word.term));
+    if(word.lessonIds.some(l => !lessonIds.has(l))) throw Error(t(207)+word.term);
+    if(terms.has(normalize(word.term))) throw Error(t(208)+word.term); terms.add(normalize(word.term));
   }
   return words;
 }
 export function validateVocabulary(raw) {
-  if(!raw || raw.format !== 'school-vocabulary-v1' || !LANGUAGES.includes(raw.language)) throw Error('Erwartet wird school-vocabulary-v1 mit language en oder es.');
+  if(!raw || raw.format !== 'school-vocabulary-v1' || !LANGUAGES.includes(raw.language)) throw Error(t(209));
   const lessons = validateLessons(raw.lessons);
   return {format:raw.format,language:raw.language,...(raw.batchId?{batchId:id(raw.batchId)}:{}),lessons,words:validateWords(raw.words,raw.language,lessons)};
 }
 export function validateState(raw) {
-  if(!raw || raw.schema !== 1 || !raw.languages || LANGUAGES.some(lang => !raw.languages[lang])) throw Error('Diese Sicherung gehört nicht zu School Language Trainer.');
+  if(!raw || raw.schema !== 1 || !raw.languages || LANGUAGES.some(lang => !raw.languages[lang])) throw Error(t(210));
   const state = emptyState();
   if(raw.preferences!=null){
-    if(typeof raw.preferences!=='object'||Array.isArray(raw.preferences)||typeof raw.preferences.requireGermanArticles!=='boolean')throw Error('Ungültige Artikel-Einstellung.');
+    if(typeof raw.preferences!=='object'||Array.isArray(raw.preferences)||typeof raw.preferences.requireGermanArticles!=='boolean')throw Error(t(211));
     state.preferences={requireGermanArticles:raw.preferences.requireGermanArticles};
   }
   for(const lang of LANGUAGES) {
     const input = raw.languages[lang], target = state.languages[lang];
-    if(input.catalogBatches!=null&&(!Array.isArray(input.catalogBatches)||input.catalogBatches.length>10000))throw Error('Ungültige Importhistorie.');
+    if(input.catalogBatches!=null&&(!Array.isArray(input.catalogBatches)||input.catalogBatches.length>10000))throw Error(t(212));
     target.catalogBatches=[...new Set(input.catalogBatches||[])].map(id);
     target.lessons = validateLessons(input.lessons);
     target.words = validateWords(input.words,lang,target.lessons);
     const ids = new Set(target.words.map(w => w.id));
-    if(!input.stats || typeof input.stats !== 'object' || Array.isArray(input.stats)) throw Error('Ungültiger Lernstand.');
+    if(!input.stats || typeof input.stats !== 'object' || Array.isArray(input.stats)) throw Error(t(213));
     for(const [key, value] of Object.entries(input.stats)) {
-      id(key); if(!ids.has(key) || !value || typeof value !== 'object') throw Error('Lernstand ohne Wort.');
+      id(key); if(!ids.has(key) || !value || typeof value !== 'object') throw Error(t(214));
       const st = {};
-      for(const name of counters) { if((/^recall(Forward|Reverse)/.test(name)||/^article/.test(name)||/^writing/.test(name))&&value[name]==null)continue;const n = value[name] ?? 0; if(!Number.isSafeInteger(n) || n < 0) throw Error('Ungültiger Zähler.'); st[name] = n; }
+      for(const name of counters) { if((/^recall(Forward|Reverse)/.test(name)||/^article/.test(name)||/^writing/.test(name))&&value[name]==null)continue;const n = value[name] ?? 0; if(!Number.isSafeInteger(n) || n < 0) throw Error(t(215)); st[name] = n; }
       if(value.dailyResults!=null){
-        if(typeof value.dailyResults!=='object'||Array.isArray(value.dailyResults)||Object.keys(value.dailyResults).length>366)throw Error('Ungültige tägliche Ergebnisse.');
+        if(typeof value.dailyResults!=='object'||Array.isArray(value.dailyResults)||Object.keys(value.dailyResults).length>366)throw Error(t(216));
         st.dailyResults={};for(const [date,modes]of Object.entries(value.dailyResults)){
-          if(!validDay(date)||!Array.isArray(modes)||modes.length>4||modes.some(mode=>!DAILY_MODES.includes(mode)))throw Error('Ungültige tägliche Ergebnisse.');
+          if(!validDay(date)||!Array.isArray(modes)||modes.length>4||modes.some(mode=>!DAILY_MODES.includes(mode)))throw Error(t(216));
           st.dailyResults[date]=[...new Set(modes)];
         }
       }
-      if(value.writingNeedsRetry!=null){if(typeof value.writingNeedsRetry!=='boolean')throw Error('Ungültige Schreibwiederholung.');st.writingNeedsRetry=value.writingNeedsRetry;}
-      if(value.pendingArticle!=null){const p=value.pendingArticle,w=target.words.find(w=>w.id===key);if(!p||typeof p.scope!=='string'||p.scope.length>1000||!Number.isSafeInteger(p.index)||p.index<0||p.index>=germanArticles(w).length||typeof p.hadError!=='boolean')throw Error('Ungültige offene Artikelfrage.');st.pendingArticle={scope:p.scope,index:p.index,hadError:p.hadError};}
-      if(typeof value.mastered !== 'boolean') throw Error('Ungültiger Lernstatus.'); st.mastered = value.mastered;
-      if(!Array.isArray(value.workedDays) || value.workedDays.length > 366 || value.workedDays.some(d => !validDay(d))) throw Error('Ungültiger Tagesverlauf.');
+      if(value.writingNeedsRetry!=null){if(typeof value.writingNeedsRetry!=='boolean')throw Error(t(217));st.writingNeedsRetry=value.writingNeedsRetry;}
+      if(value.pendingArticle!=null){const p=value.pendingArticle,w=target.words.find(w=>w.id===key);if(!p||typeof p.scope!=='string'||p.scope.length>1000||!Number.isSafeInteger(p.index)||p.index<0||p.index>=germanArticles(w).length||typeof p.hadError!=='boolean')throw Error(t(218));st.pendingArticle={scope:p.scope,index:p.index,hadError:p.hadError};}
+      if(typeof value.mastered !== 'boolean') throw Error(t(219)); st.mastered = value.mastered;
+      if(!Array.isArray(value.workedDays) || value.workedDays.length > 366 || value.workedDays.some(d => !validDay(d))) throw Error(t(220));
       st.workedDays = [...new Set(value.workedDays)].sort(); target.stats[key] = st;
     }
-    if(!Array.isArray(input.hidden) || input.hidden.some(key => !ids.has(key))) throw Error('Ungültige ausgeblendete Wörter.');
+    if(!Array.isArray(input.hidden) || input.hidden.some(key => !ids.has(key))) throw Error(t(221));
     target.hidden = [...new Set(input.hidden)];
-    if(!input.cycles || typeof input.cycles !== 'object' || Array.isArray(input.cycles)) throw Error('Ungültige Lernrunden.');
+    if(!input.cycles || typeof input.cycles !== 'object' || Array.isArray(input.cycles)) throw Error(t(222));
     for(const [scope, seen] of Object.entries(input.cycles)) {
-      if(scope.length > 1000 || !Array.isArray(seen) || seen.some(key => !ids.has(key))) throw Error('Ungültige Lernrunde.');
+      if(scope.length > 1000 || !Array.isArray(seen) || seen.some(key => !ids.has(key))) throw Error(t(223));
       Object.defineProperty(target.cycles,scope,{value:[...new Set(seen)],enumerable:true,writable:true,configurable:true});
     }
   }
@@ -105,11 +106,11 @@ function recordDailyResult(stats,day,mode,ok){
 }
 export function recordAnswer(state,lang,wordId,mode,ok,day = dayKey(),direction='forward',inputMode='default') {
   const next = clone(state), book = next.languages[lang];
-  if(!book || !book.words.some(w => w.id === wordId) || book.hidden.includes(wordId) || !validDay(day) || typeof ok !== 'boolean' || !['cards','recall','context'].includes(mode)) throw Error('Ungültige Antwort.');
-  if(!['default','writing'].includes(inputMode)||(inputMode==='writing'&&mode!=='recall'))throw Error('Ungültige Eingabeart.');
+  if(!book || !book.words.some(w => w.id === wordId) || book.hidden.includes(wordId) || !validDay(day) || typeof ok !== 'boolean' || !['cards','recall','context'].includes(mode)) throw Error(t(224));
+  if(!['default','writing'].includes(inputMode)||(inputMode==='writing'&&mode!=='recall'))throw Error(t(225));
   const st = wordStats(book,wordId);recordDailyResult(st,day,inputMode==='writing'?'writing':mode,ok);
   if(mode === 'cards') { if(ok)delete st.pendingArticle;st[ok?'correct':'wrong']++; st.streak = ok ? st.streak+1 : 0; st.mastered = st.streak >= 3; }
-  if(mode === 'recall') {if(!['forward','reverse'].includes(direction))throw Error('Ungültige Richtung.');st[ok?'recallCorrect':'recallWrong']++;const field='recall'+(direction==='reverse'?'Reverse':'Forward')+(ok?'Correct':'Wrong');st[field]=(st[field]||0)+1;}
+  if(mode === 'recall') {if(!['forward','reverse'].includes(direction))throw Error(t(226));st[ok?'recallCorrect':'recallWrong']++;const field='recall'+(direction==='reverse'?'Reverse':'Forward')+(ok?'Correct':'Wrong');st[field]=(st[field]||0)+1;}
   if(mode === 'context') { st[ok?'contextCorrect':'contextWrong']++; st.contextStreak = ok ? st.contextStreak+1 : 0; }
   st.workedDays = [...new Set([...st.workedDays,day])].sort().slice(-366); book.stats[wordId] = st;
   return next;
@@ -194,7 +195,7 @@ export function recallAnswers(word,direction='forward'){
   return [...new Set(answers.map(normalize))].filter(Boolean);
 }
 export function writingPage(book,options,pageSize=15){
-  if(![10,15,20].includes(pageSize))throw Error('Ungültige Seitengröße.');
+  if(![10,15,20].includes(pageSize))throw Error(t(227));
   const pool=eligibleWords(book,{...options,mode:'recall'}),scope=scopeKey({...options,mode:'recall'})+'|written';
   const pending=pool.filter(w=>(wordStats(book,w.id).writingCorrect||0)<3);
   const retries=pending.filter(w=>wordStats(book,w.id).writingNeedsRetry);
@@ -204,12 +205,12 @@ export function writingPage(book,options,pageSize=15){
   return {words,scope,seen:[],baseline,total:pool.length,done:pool.length-pending.length,retry:retries.length>0};
 }
 export function gradeWritingPage(state,language,page,answers,direction='forward',day=dayKey()){
-  if(!page.words.length||page.words.length!==answers.length||new Set(page.words.map(w=>w.id)).size!==page.words.length||answers.some(a=>typeof a!=='string'||!a.trim()))throw Error('Bitte alle Zeilen ausfüllen.');
-  if(typeof page.scope!=='string'||!page.scope.endsWith('|written')||!page.baseline)throw Error('Ungültiges Schreibblatt.');
+  if(!page.words.length||page.words.length!==answers.length||new Set(page.words.map(w=>w.id)).size!==page.words.length||answers.some(a=>typeof a!=='string'||!a.trim()))throw Error(t(228));
+  if(typeof page.scope!=='string'||!page.scope.endsWith('|written')||!page.baseline)throw Error(t(229));
   let next=state;const results=[];
   for(let i=0;i<page.words.length;i++){
     const w=state.languages[language].words.find(w=>w.id===page.words[i].id),st=w&&wordStats(state.languages[language],w.id),before=page.baseline[page.words[i].id];
-    if(!w||!before||(st.writingCorrect||0)>=3||before.correct!==(st.writingCorrect||0)||before.wrong!==(st.writingWrong||0))throw Error('Dieses Schreibblatt wurde bereits geprüft oder geändert. Bitte neu starten.');
+    if(!w||!before||(st.writingCorrect||0)>=3||before.correct!==(st.writingCorrect||0)||before.wrong!==(st.writingWrong||0))throw Error(t(230));
     const ok=checkRecall(answers[i],w,direction,germanArticlesRequired(state));results.push(ok);next=recordAnswer(next,language,w.id,'recall',ok,day,direction,'writing');
     const stats=next.languages[language].stats[w.id],field=ok?'writingCorrect':'writingWrong';stats[field]=(stats[field]||0)+1;stats.writingNeedsRetry=!ok;
   }
@@ -228,14 +229,14 @@ export function germanArticles(word){
   return word.de.split(/;|\s+\/\s+/).map(value=>/^(der|die|das)\s+(.+)$/i.exec(value.trim())).filter(Boolean).map(match=>({article:match[1].toLowerCase(),noun:match[2]}));
 }
 export function beginArticleMatch(state,language,wordId,scope,day=dayKey()){
-  const book=state.languages[language],w=book?.words.find(w=>w.id===wordId);if(!w||book.hidden.includes(wordId)||!germanArticles(w).length||typeof scope!=='string'||scope.length>1000||!validDay(day))throw Error('Ungültige Artikelfrage.');
+  const book=state.languages[language],w=book?.words.find(w=>w.id===wordId);if(!w||book.hidden.includes(wordId)||!germanArticles(w).length||typeof scope!=='string'||scope.length>1000||!validDay(day))throw Error(t(231));
   const next=clone(state),b=next.languages[language],st=wordStats(b,wordId);
   if(!st.pendingArticle){recordDailyResult(st,day,'cards',false);st.correct++;st.workedDays=[...new Set([...st.workedDays,day])].sort().slice(-366);st.pendingArticle={scope,index:0,hadError:false};b.stats[wordId]=st;}
   return next;
 }
 export function answerGermanArticle(state,language,wordId,article,day=dayKey()){
   const next=clone(state),b=next.languages[language],w=b?.words.find(w=>w.id===wordId),st=b?.stats[wordId],pending=st?.pendingArticle;
-  if(!w||b.hidden.includes(wordId)||!pending||!['der','die','das'].includes(article)||!validDay(day))throw Error('Keine offene Artikelfrage.');
+  if(!w||b.hidden.includes(wordId)||!pending||!['der','die','das'].includes(article)||!validDay(day))throw Error(t(232));
   const q=germanArticles(w)[pending.index],ok=q.article===article;
   const field=ok?'articleCorrect':'articleWrong';st[field]=(st[field]||0)+1;st.workedDays=[...new Set([...st.workedDays,day])].sort().slice(-366);
   if(!ok){pending.hadError=true;st.streak=0;st.mastered=false;}
@@ -255,13 +256,13 @@ export function matchingRound(book,options,language,random=Math.random){
 export function checkContext(input,example) { return [example.answer,...(example.acceptedAnswers||[])].some(answer=>normalize(input)===normalize(answer)); }
 export function mergeVocabulary(state,raw) {
   const incoming=validateVocabulary(raw), next=clone(state), book=next.languages[incoming.language];let added=0;
-  for(const lesson of incoming.lessons) { const old=book.lessons.find(l=>l.id===lesson.id); if(old && old.name!==lesson.name) throw Error('Lektions-ID bereits mit anderem Namen belegt: '+lesson.id); if(!old)book.lessons.push(lesson); }
+  for(const lesson of incoming.lessons) { const old=book.lessons.find(l=>l.id===lesson.id); if(old && old.name!==lesson.name) throw Error(t(233)+lesson.id); if(!old)book.lessons.push(lesson); }
   for(const word of incoming.words) {
     const sameId=book.words.find(w=>w.id===word.id), sameTerm=book.words.find(w=>normalize(w.term)===normalize(word.term));
-    if(sameId && normalize(sameId.term)!==normalize(word.term)) throw Error('Wort-ID bereits belegt: '+word.id);
+    if(sameId && normalize(sameId.term)!==normalize(word.term)) throw Error(t(234)+word.id);
     const old=sameId || sameTerm;
     if(old) {
-      if(normalize(old.de)!==normalize(word.de) || old.type!==word.type) throw Error('Abweichender Eintrag für '+word.term+'. Bitte zuerst im Wörterbuch bearbeiten.');
+      if(normalize(old.de)!==normalize(word.de) || old.type!==word.type) throw Error(t(235)+word.term+t(236));
       old.lessonIds=[...new Set([...old.lessonIds,...word.lessonIds])];
       for(const example of word.examples) if(!old.examples.some(e=>e.sentence===example.sentence && e.answer===example.answer))old.examples.push(example);
     } else { book.words.push(word); added++; }
@@ -269,7 +270,7 @@ export function mergeVocabulary(state,raw) {
   return {state:validateState(next),added};
 }
 export function backup(state) { return {format:FORMAT,exportedAt:new Date().toISOString(),state:validateState(state)}; }
-export function parseBackup(raw) { if(raw?.format !== FORMAT)throw Error('Keine School-Trainer-Sicherung. Deutsch-Trainer-Daten werden nicht importiert.');return validateState(raw.state); }
+export function parseBackup(raw) { if(raw?.format !== FORMAT)throw Error(t(237));return validateState(raw.state); }
 export function applyCatalog(state,raw){
   const source=validateVocabulary(raw),book=state.languages[source.language];
   if(source.batchId&&book.catalogBatches?.includes(source.batchId))return {state,added:0};
@@ -278,13 +279,13 @@ export function applyCatalog(state,raw){
   return result;
 }
 export function resetLanguage(state,language){
-  if(!LANGUAGES.includes(language))throw Error('Ungültige Sprache.');
+  if(!LANGUAGES.includes(language))throw Error(t(238));
   const next=clone(state),previous=next.languages[language];
   next.languages[language]={...emptyState().languages[language],catalogBatches:[...(previous.catalogBatches||[])]};
   return validateState(next);
 }
 export function resetProgress(state,language){
-  if(!LANGUAGES.includes(language))throw Error('Ungültige Sprache.');
+  if(!LANGUAGES.includes(language))throw Error(t(238));
   const next=clone(state);next.languages[language].stats={};next.languages[language].cycles={};
   return validateState(next);
 }

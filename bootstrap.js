@@ -2,7 +2,12 @@
 (() => {
   const get=id=>document.getElementById(id);
   function settings(){const dialog=get('toolsDialog');if(dialog&&!dialog.open)dialog.showModal();}
-  function recovery(){const panel=get('appRecovery');if(panel)panel.hidden=false;if(get('toolsRecovery'))get('toolsRecovery').hidden=false;}
+  function recovery(){let es=document.documentElement.lang==='es';try{es=es||localStorage.getItem('school-language-trainer:ui-language:v1')==='es';}catch{}
+    const message=es?'La aplicación no se ha cargado por completo. Tus datos guardados se conservan.':'The app could not fully load. Your saved data is safe.';
+    const text=get('appRecovery')?.querySelector('span');if(text)text.textContent=message;
+    if(get('toolsRecovery')?.firstChild)get('toolsRecovery').firstChild.textContent=message+' ';
+    for(const id of ['refreshApp','refreshAppInTools'])if(get(id))get(id).textContent=es?'Actualizar aplicación ↻':'Update app ↻';
+    const panel=get('appRecovery');if(panel)panel.hidden=false;if(get('toolsRecovery'))get('toolsRecovery').hidden=false;}
   if(!get('openTools').onclick)get('openTools').onclick=settings;if(!get('accountAction').onclick)get('accountAction').onclick=settings;
   if(!get('startTraining').onclick){get('startTraining').disabled=false;get('startTraining').onclick=()=>{recovery();settings();};}
   document.querySelectorAll('[data-close]').forEach(button=>{if(!button.onclick)button.onclick=()=>get(button.dataset.close)?.close();});
